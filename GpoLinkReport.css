@@ -1,0 +1,15 @@
+body    { background-color:#FFFFFF; border:1px solid #666666; color:#000000; font-size:68%; font-family:MS Shell Dlg; margin:0,0,10px,0; word-break:normal; word-wrap:break-word; }
+
+h1  { font-size: 200%;}
+h2  { font-size: 100%;}
+table   { font-size:100%; table-layout:fixed; width:100%; border-width: 1px;}
+table.internal   { font-size:100%; table-layout:fixed; width:100%; border-width: 1px;}
+td  { overflow:visible; text-align:left; vertical-align:top; white-space:normal; background-color:#D9E3EA;}
+td.inherited  { overflow:visible; text-align:left; vertical-align:top; white-space:normal; background-color:#D9E3EA;}
+td.internal  { overflow:visible; text-align:left; vertical-align:top; white-space:normal; background-color:white;}
+
+th  { overflow:visible; text-align:left; vertical-align:top; white-space:normal; background-color: #7197B3; border: 1px solid #BBBBBB; color: #000000; cursor: hand; display: block; font-family: MS Shell Dlg; font-size: 100%; font-weight: bold; }
+caption  { overflow:visible; text-align:left; vertical-align:top; white-space:normal; background-color: #7197B3; border: 1px solid #BBBBBB; color: #000000; cursor: hand; display: block; font-family: MS Shell Dlg; font-size: 100%; font-weight: bold; }
+
+ins { background-color: green; color: black; font-weight: bold; text-decoration: none; }
+del { color: white; background-color:red; font-weight: bold; }

@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Configuration>
+  <Domains>
+	<Domain Name="eett.local" 
+		GPOPrefix="T_"
+		ShortName="eett"
+		GPOBackupPath="E:\GPOBackup\EETT\Backups" 
+		GPOReportPath="E:\GPOBackup\EETT\Reports"
+		GPOLinkReportPath="E:\GPOBackup\EETT\GPOLinkReports"
+		OUReportPath="E:\GPOBackup\EETT\OUReports"
+	/>	  
+	<Domain Name="eeta.local" 
+		GPOPrefix="A_"
+		ShortName="eeta"
+		GPOBackupPath="E:\GPOBackup\EETA\Backups" 
+		GPOReportPath="E:\GPOBackup\EETA\Reports"
+		GPOLinkReportPath="E:\GPOBackup\EETA\GPOLinkReports"
+		OUReportPath="E:\GPOBackup\EETA\OUReports"
+	/>	  
+	<Domain Name="eetp.local" 
+		GPOPrefix="P_" 
+		ShortName="eetp"
+		GPOBackupPath="E:\GPOBackup\EETP\Backups" 
+		GPOReportPath="E:\GPOBackup\EETP\Reports"
+		GPOLinkReportPath="E:\GPOBackup\EETP\GPOLinkReports"
+		OUReportPath="E:\GPOBackup\EETP\OUReports"/>
+	<Reports 
+		OUDiffPath="E:\ADPolice\OUDiff"
+		GPDiffPath="E:\ADPolice\GPDiff"
+		ObsoletedGPOsPath="E:\ADPolice\Obsoleted GPOs"
+		GPLinkDiffPath="E:\ADPolice\GPLinkDiff"
+	/>
+  </Domains>
+  <Mail SmtpHost="mail" recipient="int-eet@schubergphilis.com" sender="EET_AD_Police@eetmdc11.eetm.local">
+  	<GPOChangeReport
+  		Recipient="int-eet@schubergphilis.com"
+		Sender="EET_AD_Police@eetmdc11.eetm.local"
+		Subject="EET GPO Change Report"/>
+	<OUChangedReport
+  		Recipient="int-eet@schubergphilis.com"
+		Sender="EET_AD_Police@eetmdc11.eetm.local"
+		Subject="EET OU Change Report"/>	
+  </Mail>
+  <GPOBackup
+  	Recipient="int-eet@schubergphilis.com"
+	Sender="EET_AD_Police@eetmdc11.eetm.local"
+	Subject="GPO Change Report"
+	SaveDiffReports="true"
+	AttachDiffReports="true"
+	SendResult="true"
+  />
+  <GPOLinkReport
+  	Recipient="int-eet@schubergphilis.com"
+	Sender="EET_AD_Police@eetmdc11.eetm.local"
+	Subject="GPOLinks Change Report"
+	SaveDiffReports="true"
+	AttachDiffReports="true"
+	SendResult="true"
+  />
+</Configuration>

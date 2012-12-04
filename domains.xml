@@ -31,18 +31,18 @@
 		GPLinkDiffPath="E:\ADPolice\GPLinkDiff"
 	/>
   </Domains>
-  <Mail SmtpHost="mail" recipient="int-eet@schubergphilis.com" sender="EET_AD_Police@eetmdc11.eetm.local">
+  <Mail SmtpHost="mail" recipient="rmul@schubergphilis.com" sender="EET_AD_Police@eetmdc11.eetm.local">
   	<GPOChangeReport
-  		Recipient="int-eet@schubergphilis.com"
+  		Recipient="rmul@schubergphilis.com"
 		Sender="EET_AD_Police@eetmdc11.eetm.local"
 		Subject="EET GPO Change Report"/>
 	<OUChangedReport
-  		Recipient="int-eet@schubergphilis.com"
+  		Recipient="rmul@schubergphilis.com"
 		Sender="EET_AD_Police@eetmdc11.eetm.local"
 		Subject="EET OU Change Report"/>	
   </Mail>
   <GPOBackup
-  	Recipient="int-eet@schubergphilis.com"
+  	Recipient="rmul@schubergphilis.com"
 	Sender="EET_AD_Police@eetmdc11.eetm.local"
 	Subject="GPO Change Report"
 	SaveDiffReports="true"
@@ -50,7 +50,7 @@
 	SendResult="true"
   />
   <GPOLinkReport
-  	Recipient="int-eet@schubergphilis.com"
+  	Recipient="rmul@schubergphilis.com"
 	Sender="EET_AD_Police@eetmdc11.eetm.local"
 	Subject="GPOLinks Change Report"
 	SaveDiffReports="true"

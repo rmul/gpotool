@@ -2,30 +2,34 @@
 param([string]$InputFile=".\domains.xml",[Switch]$Dev)
 
 cls
+cd (Split-Path $MyInvocation.MyCommand.Path)
 
 $runtime=$(Get-Date -Format "yyyyMMddHHmmss")
 
 try {
 	Start-Transcript adpolice.log
 } catch {}
+
+#region Load Modules
 Write-verbose "$(Get-Date -Format "HH:mm:ss") : Importing ActiveDirectory Module"
 Import-Module activedirectory -Verbose:$false
 Write-verbose "$(Get-Date -Format "HH:mm:ss") : Importing GroupPolicy Module"
 Import-Module grouppolicy -Verbose:$false
 Write-verbose "$(Get-Date -Format "HH:mm:ss") : Importing ADGPOlib.ps1"
 . .\ADGPOlib.ps1
-
-
-
 LoadHTMLDiff
+#endregion Load Modules
+
+#region Load Config
 $config=LoadConfig $InputFile
 $Domains=$config.Domains.Domain
 $cssstyle=Get-CSS
+#endregion Load Config
 
 #region Backup GPOs
 Write-Verbose "$(Get-Date -Format "HH:mm:ss") : Region Backup GPOs"
 foreach ($domain in $Domains) {
-	Backup_GPOs -ConfigDomain $domain
+	Backup_GPOs -ConfigDomain $domain -Config $config
 }
 #endregion Backup GPOs
 
@@ -113,7 +117,9 @@ $testhtml | Out-File "$($config.Domains.Reports.OUDiffPath)\OUDiff_$runtime.htm"
 if ($dev) {
 	ii "$($config.Domains.Reports.OUDiffPath)\OUDiff_$runtime.htm"
 } else {
-	send-SMTPmail -to $config.Mail.Recipient -from $config.Mail.Sender -attachment "$($config.Domains.Reports.OUDiffPath)\OUDiff_$runtime.htm" -subject "EET AD Police - OUs Report" -smtpserver $config.Mail.Server
+	if ((Get-Date).dayofweek -eq "Sunday") {
+		send-SMTPmail -to $config.Mail.Recipient -from $config.Mail.Sender -attachment "$($config.Domains.Reports.OUDiffPath)\OUDiff_$runtime.htm" -subject "EET AD Police - OUs Report" -smtpserver $config.Mail.Server
+	}
 }
 #endregion Get Different OUs across domains
 
@@ -132,7 +138,9 @@ $html| Out-File "$($config.Domains.Reports.ObsoletedGPOsPath)\ObsoletedGPOs_$run
 if ($dev) {
 	ii "$($config.Domains.Reports.ObsoletedGPOsPath)\ObsoletedGPOs_$runtime.htm"
 } else {
-	send-SMTPmail -to $config.Mail.Recipient -from $config.Mail.Sender -attachment "$($config.Domains.Reports.ObsoletedGPOsPath)\ObsoletedGPOs_$runtime.htm" -subject "EET AD Police - Obsolete GPOs Report" -smtpserver $config.Mail.Server
+	if ((Get-Date).dayofweek -eq "Sunday") {
+		send-SMTPmail -to $config.Mail.Recipient -from $config.Mail.Sender -attachment "$($config.Domains.Reports.ObsoletedGPOsPath)\ObsoletedGPOs_$runtime.htm" -subject "EET AD Police - Obsolete GPOs Report" -smtpserver $config.Mail.Server
+	}
 }
 #endregion Find bogus (empty, disabled and/or unlinked) GPOs
 
@@ -189,17 +197,82 @@ while ($i -lt $testhtml.Count) {
 $testhtml | Out-File "$($config.Domains.Reports.GPDiffPath)\GPDiff_$runtime.htm"
 if ($dev) {
 	ii "$($config.Domains.Reports.GPDiffPath)\GPDiff_$runtime.htm"
-	#send-SMTPmail -to $config.Mail.Recipient -from $config.Mail.Sender -attachment "$($config.Domains.Reports.GPDiffPath)\GPDiff_$runtime.htm" -subject "EET AD Police - GPOs Report" -smtpserver $config.Mail.Server
+#	#send-SMTPmail -to $config.Mail.Recipient -from $config.Mail.Sender -attachment "$($config.Domains.Reports.GPDiffPath)\GPDiff_$runtime.htm" -subject "EET AD Police - GPOs Report" -smtpserver $config.Mail.Server
 } else {
-	send-SMTPmail -to $config.Mail.Recipient -from $config.Mail.Sender -attachment "$($config.Domains.Reports.GPDiffPath)\GPDiff_$runtime.htm" -subject "EET AD Police - GPOs Report" -smtpserver $config.Mail.Server
+	if ((Get-Date).dayofweek -eq "Sunday") {
+		send-SMTPmail -to $config.Mail.Recipient -from $config.Mail.Sender -attachment "$($config.Domains.Reports.GPDiffPath)\GPDiff_$runtime.htm" -subject "EET AD Police - GPOs Report" -smtpserver $config.Mail.Server
+	}
 }
 #endregion
 
 #region Get GPOLinks per Domain
-foreach ($domain in $Domains) { 
-	get-OU-Report $domain
+Write-verbose "$(Get-Date -Format "HH:mm:ss") : Region GPOLinks per Domain"
+$i=0
+while ($i -lt $Domains.Count) {
+	$GPOLinks=get-OU-Report -ConfigDomain $domains[$i] -Config $config
+	$Domains[$i]=$Domains[$i] | Add-Member -MemberType NoteProperty -Name GPOLinks -Value $GPOLinks -PassThru	
+	$i++
 }
+Remove-Variable GPOLinks
+Remove-Variable i
 #endregion
+
+#region GPOLinks across Domains
+Write-verbose "$(Get-Date -Format "HH:mm:ss") : Region GPOLinks across Domains"
+$AllGPOLinks=@()
+$AllNeutralGPOLinks=@()
+foreach ($Domain in $Domains) {
+	Write-verbose "$(Get-Date -Format "HH:mm:ss") $($Domain.Name): Neutralizing $($Domain.GPOLinks.count) GPO links"
+	Foreach ($GPOLinkOU in $Domain.GPOLinks) {
+		$AllGPOLinks+=$GPOLinkOU.GpoLinks
+		foreach ($link in $GPOLinkOU.GpoLinks) {
+			$neutrallink=New-Object System.Object
+			$neutrallink=$neutrallink|Add-Member -MemberType NoteProperty -Name DisplayName -Value (Domain-Neutral -configdomains $Domains -domainspecificstring $link.DisplayName) -PassThru
+			$neutrallink=$neutrallink|Add-Member -MemberType NoteProperty -Name Enabled -Value $link.Enabled -PassThru
+			$neutrallink=$neutrallink|Add-Member -MemberType NoteProperty -Name Enforced -Value $link.Enforced -PassThru
+			$neutrallink=$neutrallink|Add-Member -MemberType NoteProperty -Name Target -Value (Domain-Neutral -configdomains $Domains -domainspecificstring $link.Target) -PassThru
+			$neutrallink=$neutrallink|Add-Member -MemberType NoteProperty -Name Order -Value $link.Order -PassThru
+			$AllNeutralGPOLinks+=$neutrallink
+			Remove-Variable neutrallink
+		}
+	}
+}
+Write-verbose "$(Get-Date -Format "HH:mm:ss") : Sorting and selecting unique neutralized GPO links"
+$AllNeutralGPOLinks=$AllNeutralGPOLinks | sort @{Expression={$($_.Target.split(','))[-1]}},@{Expression={$($_.Target.split(','))[-2]}},@{Expression={$($_.Target.split(','))[-3]}},@{Expression={$($_.Target.split(','))[-4]}},@{Expression={$($_.Target.split(','))[-5]}},@{Expression={$($_.Target.split(','))[-6]}},Order,DisplayName,Enabled,Enforsortced -Unique
+Write-verbose "$(Get-Date -Format "HH:mm:ss") : Comparing $($AllNeutralGPOLinks.count) neutralized GPO links with domains"
+foreach ($link in $AllNeutralGPOLinks) {
+	foreach ($Domain in $Domains) {
+		$foundou=$Domain.Gpolinks | where {$_.Path -eq (domain-specific -domainneutralstring $link.Target -configdomain $Domain)}
+		$foundlink=$foundou.GpoLinks | where {
+			($_.DisplayName -eq (domain-specific -configdomain $Domain -domainneutralstring $link.DisplayName)) -and 
+			($_.Order -eq $link.Order) -and 
+			($_.Enabled -eq $link.Enabled) -and
+			($_.Enforced -eq $link.Enforced)
+		}
+		if ($foundlink) { 
+			$link=$link|Add-Member -MemberType NoteProperty -Name $Domain.ShortName -Value $true -PassThru
+		} else {
+			$link=$link|Add-Member -MemberType NoteProperty -Name $Domain.ShortName -Value $false -PassThru
+		}
+	}
+}
+Write-verbose "$(Get-Date -Format "HH:mm:ss") : Done Comparing $($AllNeutralGPOLinks.count) neutralized GPO links with domains"
+$report=""
+$report=OutputGPOLinkHtmlHeader
+$report+=OutputGPOLinkTableHeader
+$report+=(OutputGPOLinkTable $AllNeutralGPOLinks )
+$report+=OutputGPOLinkTableFooter
+$report+=OutputGPOLinkHtmlFooter
+$report | Out-File "$($config.Domains.Reports.GPLinkDiffPath)\GPLinkDiff_$runtime.htm"
+#$AllNeutralGPOLinks | ConvertTo-Html | Out-File "$($config.Domains.Reports.GPLinkDiffPath)\GPLinkDiff_$runtime.htm"
+if ($dev) {
+	ii "$($config.Domains.Reports.GPLinkDiffPath)\GPLinkDiff_$runtime.htm"
+} else {
+	if ((Get-Date).dayofweek -eq "Sunday") {
+		send-SMTPmail -to $config.Mail.Recipient -from $config.Mail.Sender -attachment "$($config.Domains.Reports.GPLinkDiffPath)\GPLinkDiff_$runtime.htm" -subject "EET AD Police - GPO Link Difference Report" -smtpserver $config.Mail.Server
+	}
+}
+#endregion GPOLinks across Domains
 
 try {
 	Stop-Transcript

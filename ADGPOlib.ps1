@@ -145,6 +145,136 @@ Function Get-PreviousReport($ConfigDomain=$(throw "ConfigDomain required."),$gpo
 	}
 	return $previousreport
 }
+function Add-Node { 
+	[cmdletbinding()]
+    param (
+		$selectedNode, 
+        $name, 
+        $tag 
+    ) 
+    $newNode = new-object System.Windows.Forms.TreeNode  
+	$newNode.ImageKey="Blank"
+    $newNode.Name = $name 
+    $newNode.Text = $name 
+    $newNode.Tag = $tag 
+    $selectedNode.Nodes.Add($newNode) | Out-Null 
+    return $newNode 
+} 
+function ou-treenodes {
+	[cmdletbinding()]
+	param ($node,$dn,$svr)	
+	Get-ADOrganizationalUnit -Server $dc -Filter * -SearchScope 1 -SearchBase $dn | %{
+		$_.distinguishedname
+		$newnode=add-node $node $_.Name $_.Name
+		ou-treenodes $newnode $_.distinguishedname $svr | Out-Null
+	}
+}
+Function Compare-OU-Trees($domains2compare){
+
+	$domainous=New-Object System.Windows.Forms.TreeNode
+	$domainous.Name = "Compared" 
+    $domainous.Text = "All Domains" 
+    $domainous.Tag = "Compared" 
+	$domainous.ImageKey = "Blank"
+	
+	foreach ($domain in $domains2compare) {
+		$ous=New-Object System.Windows.Forms.TreeNode
+		$dc=$(Get-ADDomainController -DomainName $domain.Name -Discover).Name+"."+$domain.Name
+		$dom= Get-ADDomain -Server $dc		
+		$domainnode=add-node $domainous $domain.Name $domain.Name
+		$domainnode.imagekey="Main"
+		ou-treenodes -node $domainnode -dn $dom.DistinguishedName -svr $dc | Out-Null		
+		#$domainous.nodes.addrange($rootnode)
+	}
+	$alldomainous=New-Object System.Windows.Forms.TreeNode
+	foreach ($n in $domainous.Nodes) {
+		if (!($alldomainous.nodes[$n.name])) { $alldomainous.nodes.add($n.name,$n.name) }
+		# if (!($x.Tag -band [Math]::Pow(2,$y))) {$x.Tag+= [Math]::Pow(2,$y)} else {write-host $x.Tag}
+		if (!($alldomainous.nodes[$n.name].Tag -band [Math]::Pow(2,[array]::IndexOf($domains2compare,$domain)))) {$x.Tag+= [Math]::Pow(2,[array]::IndexOf($domains2compare,$domain))}
+	}
+	$alldomainous
+	
+#	$OUtreeView1.Nodes.Clear()
+#	$OUtreeView1.BeginUpdate()
+#	
+#	$comparedous=New-Object System.Windows.Forms.TreeNode
+#	$comparedous.Name = "Compared" 
+#    $comparedous.Text = "All Domains Compared" 
+#    $comparedous.Tag = "Compared" 
+#	$comparedous.ImageKey = "Main"
+#	$OUtreeView1.nodes.add($comparedous)
+#	$OUtreeView1.nodes.addrange($domainous.nodes)
+#	$OUtreeView1.EndUpdate()
+#
+#	$domainous=@()
+#	$neutralous=@()
+#	# Get all OUS
+#	foreach ($domain in $config.Domains.Domain) {
+#		$dc=$(Get-ADDomainController -DomainName $domain.Name -Discover).Name+"."+$domain.Name
+#		$dom= Get-ADDomain -Server $dc		
+#		$adous=Get-ADOrganizationalUnit -Server $dc -Filter * | sort @{Expression={$($_.distinguishedName.split(','))[-1]}},@{Expression={$($_.distinguishedName.split(','))[-2]}},@{Expression={$($_.distinguishedName.split(','))[-3]}},@{Expression={$($_.distinguishedName.split(','))[-4]}},@{Expression={$($_.distinguishedName.split(','))[-5]}},@{Expression={$($_.distinguishedName.split(','))[-6]}}
+#		$allous=@()
+#		foreach ($ou in $adous) {
+#			$allous+=$($ou.distinguishedName -replace "$($dom.distinguishedName)","")
+#			$neutralous+=$($ou.distinguishedName -replace "$($dom.distinguishedName)","")
+#		}
+#		$allous=$allous | sort @{Expression={$($_.split(','))[-2]}},@{Expression={$($_.split(','))[-3]}},@{Expression={$($_.split(','))[-4]}},@{Expression={$($_.split(','))[-5]}},@{Expression={$($_.split(','))[-6]}}
+#		$domain=$domain | Add-Member -MemberType NoteProperty -Name OUs -Value $allous -PassThru
+#		$domainous+=$domain
+#	}
+#	$neutralous=$neutralous | sort -Unique | sort @{Expression={$($_.split(','))[-2]}},@{Expression={$($_.split(','))[-3]}},@{Expression={$($_.split(','))[-4]}},@{Expression={$($_.split(','))[-5]}},@{Expression={$($_.split(','))[-6]}}
+#	# Compare OUs per domain
+#	foreach ($domain in $domainous) {
+#		$comparison=Compare-Object $domain.OUs $neutralous -IncludeEqual
+#		$comparison=$comparison | sort @{Expression={$($_.InputObject.split(','))[-2]}},@{Expression={$($_.InputObject.split(','))[-3]}},@{Expression={$($_.InputObject.split(','))[-4]}},@{Expression={$($_.InputObject.split(','))[-5]}},@{Expression={$($_.InputObject.split(','))[-6]}}	
+#		$domainous[[array]::IndexOf($domainous,$domain)]=$domainous[[array]::IndexOf($domainous,$domain)] | Add-Member -MemberType NoteProperty -Name ComparedOUs -Value $comparison -PassThru
+#	}
+#	$table = New-Object system.Data.DataTable "Tabel"
+#	$col = New-Object system.Data.DataColumn OU,([string])
+#	$table.columns.add($col)
+#	foreach ($domain in $domainous) {
+#		$col = New-Object system.Data.DataColumn $($domain.name),([string])
+#		$table.columns.add($col)
+#	}
+#	$i=0
+#	while ($i -lt $domainous[0].ComparedOUs.count) {
+#		$row=$table.NewRow()
+#		$row.OU=$domainous[0].ComparedOUs[$i].InputObject
+#		foreach ($domain in $domainous) {
+#			if ($domain.ComparedOUs[$i].SideIndicator -eq "==") {
+#				$row.$($domain.name)="OK"			
+#				$dom=[adsi] "LDAP://$($domain.name)"
+#				$oustring=$domain.ComparedOUs[$i].InputObject+$dom.distinguishedName.ToString()
+#				$boundou=New-Object system.DirectoryServices.DirectoryEntry("LDAP://$oustring")
+#				#Get-ADOrganizationalUnit -Identity $oustring -Server eettdc20.eett.local (Problem, the dc is not known here anymore)
+#				
+#				$kids=0
+#				if (!($boundou.Children -eq $null)) {
+#					foreach ($kid in $boundou.Children) {
+#						#if (!(($kid.SchemaClassName -eq "organizationalUnit") -or ($kid.SchemaClassName -eq "container"))) {
+#							$kids++
+#						#}
+#					}
+#				}
+#				$row.$($domain.name)="$kids"
+#			} else {
+#				$row.$($domain.name)="MISSING"
+#			}
+#		}
+#		$table.Rows.Add($row)
+#		$i++
+#	}
+#	$testhtml=$table |select *  –ExcludeProperty RowError, RowState, HasErrors, Name, Table, ItemArray | ConvertTo-HTML -head $cssstyle -Title "EET ADPolice OU Report"
+#	$i=0
+#	while ($i -lt $testhtml.Count) {
+#		if ($testhtml[$i].toupper().contains("MISSING")) {
+#			#$testhtml[$i]=$testhtml[$i].replace("<tr>","<tr class=""nok"">")
+#			$testhtml[$i]=$testhtml[$i].replace("<td>MISSING</td>","<td class=""nok"">MISSING</td>")
+#		}
+#		$i++
+#	}
+#	$testhtml | Out-File "$($config.Domains.Reports.OUDiffPath)\OUDiff_$runtime.htm"
+}
 function OutputOUGPOLinkHtmlHeader {
 	[cmdletbinding()]
 	param($ConfigDomain)

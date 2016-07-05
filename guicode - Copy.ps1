@@ -4,21 +4,6 @@ $ConfigDataset=New-Object System.Data.DataSet
 $wb=New-Object system.Windows.Forms.WebBrowser
 $ReportTabPage.Controls.Add($wb)
 $wb.Dock=5
-$OUtreeView1.ImageList=new-object system.Windows.Forms.ImageList
-$System_Drawing_Size = New-Object System.Drawing.Size 
-$System_Drawing_Size.Width = 48 
-$System_Drawing_Size.Height = 16 
-$OUtreeView1.ImageList.ImageSize = $System_Drawing_Size
-$OUtreeView1.Imagelist.Images.Add("Main",[System.Drawing.Image]::FromFile(".\Images\eye.gif"))
-$OUtreeView1.Imagelist.Images.Add("Blank",[System.Drawing.Image]::FromFile(".\Images\blank.gif"))
-$OUtreeView1.Imagelist.Images.Add("TAP",[System.Drawing.Image]::FromFile(".\Images\TAP.gif"))
-$OUtreeView1.Imagelist.Images.Add("xAP",[System.Drawing.Image]::FromFile(".\Images\xAP.gif"))
-$OUtreeView1.Imagelist.Images.Add("TxP",[System.Drawing.Image]::FromFile(".\Images\TxP.gif"))
-$OUtreeView1.Imagelist.Images.Add("TAx",[System.Drawing.Image]::FromFile(".\Images\TAx.gif"))
-$OUtreeView1.Imagelist.Images.Add("xxP",[System.Drawing.Image]::FromFile(".\Images\xxP.gif"))
-$OUtreeView1.Imagelist.Images.Add("xAx",[System.Drawing.Image]::FromFile(".\Images\xAx.gif"))
-$OUtreeView1.Imagelist.Images.Add("Txx",[System.Drawing.Image]::FromFile(".\Images\Txx.gif"))
-
 
 #Extra Functions
 function PopulateConfigGridView {
@@ -33,30 +18,6 @@ function PopulateConfigGridView {
 	$ConfigurationdataGridView2.Datasource=$ConfigDataset.Tables["Mail"].Defaultview
 	$ConfigurationdataGridView2.AutoResizeColumns()
 	$ConfigDataset.WriteXml("c:\SBP\Scripts\outxml.xml")
-}
-function Add-Node { 
-	[cmdletbinding()]
-    param (
-		$selectedNode, 
-        $name, 
-        $tag 
-    ) 
-    $newNode = new-object System.Windows.Forms.TreeNode  
-	$newNode.ImageKey="Blank"
-    $newNode.Name = $name 
-    $newNode.Text = $name 
-    $newNode.Tag = $tag 
-    $selectedNode.Nodes.Add($newNode) | Out-Null 
-    return $newNode 
-} 
-function ou-treenodes {
-	[cmdletbinding()]
-	param ($node,$dn,$svr)	
-	Get-ADOrganizationalUnit -Server $dc -Filter * -SearchScope 1 -SearchBase $dn | %{
-		$_.distinguishedname
-		$newnode=add-node $node $_.Name "OU"
-		ou-treenodes $newnode $_.distinguishedname $svr
-	}
 }
 
 
@@ -99,9 +60,6 @@ $handler_MaintabControl_SelectedIndexChanged=
 		$SaveButton.Visible=$true
 	} else {
 		$SaveButton.Visible=$false
-	}
-	if ($Maintabcontrol.SelectedTab -eq $OUtabPage) {
-		. $handler_OUbutton_Click
 	}
 
 }
@@ -165,8 +123,6 @@ $handler_ConfigFile_OK=
 	$GPOlistBox.Visible=$true
 	$tabControl1.Visible=$true
 	PopulateConfigGridView $configfile
-	
-	
 }
 
 $handler_ExitButton_Click= 
@@ -264,37 +220,6 @@ $handler_GPOHistoryDataGridView_SelectionChanged={
 		$GPOBackupDiffbutton.enabled=$false
 	}
 }
-$handler_OUbutton_Click= 
-{
-	Write-Verbose "$(Get-Date -Format "HH:mm:ss") : OU Tab selected"
-	$tn=Compare-OU-Trees $configuration.Domains.Domain
-	$domainous=New-Object System.Windows.Forms.TreeNode
-	$domainous.Name = "Compared" 
-    $domainous.Text = "All Domains" 
-    $domainous.Tag = "Compared" 
-	$domainous.ImageKey = "Blank"
-	$OUtreeView1.Nodes.Clear()
-	$OUtreeView1.BeginUpdate()
-	foreach ($domain in $configuration.Domains.Domain) {
-		$ous=New-Object System.Windows.Forms.TreeNode
-		$dc=$(Get-ADDomainController -DomainName $domain.Name -Discover).Name+"."+$domain.Name
-		$dom= Get-ADDomain -Server $dc		
-		$rootnode=add-node $ous $domain.Name "root"
-		$rootnode.imagekey="Main"
-		ou-treenodes -node $rootnode -dn $dom.DistinguishedName -svr $dc
-		$domainous.nodes.addrange($rootnode)
-	}
-	$comparedous=New-Object System.Windows.Forms.TreeNode
-	$comparedous.Name = "Compared" 
-    $comparedous.Text = "All Domains Compared" 
-    $comparedous.Tag = "Compared" 
-	$comparedous.ImageKey = "Main"
-	$OUtreeView1.nodes.add($comparedous)
-	$OUtreeView1.nodes.addrange($domainous.nodes)
-	$OUtreeView1.EndUpdate()
-}
-
-
 
 $OnLoadForm_StateCorrection=
 {#Correct the initial state of the form to prevent the .Net maximized form issue

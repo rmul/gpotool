@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Configuration>
+	<Domains includeLocalDomain="true" includeTrustedDomains="true" />
+  	<Mail 
+  		Recipient="rmul@schubergphilis.com"
+		Sender="EET_AD_Police@eetmdc11.eetm.local"
+		Subject="EET AD Police Report"
+		Host="mail"
+  	/>
+  	<Export path="C:\GPOBackup"	/>
+</Configuration>

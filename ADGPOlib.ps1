@@ -16,9 +16,11 @@ function LoadHTMLDiff {
 	[cmdletbinding()]
 	param()
 	try {
-		Write-Verbose "$(Get-Date -Format "HH:mm:ss") : Loading C:\SBP\Scripts\htmldiff.dll"
+		Write-Verbose "$(Get-Date -Format "HH:mm:ss") : Loading htmldiff.dll"
 		#$rc=[Reflection.Assembly]::LoadFile(“C:\SBP\Scripts\AD_TAP_Checker_Dev\htmldiff.dll”)
-		$rc=[Reflection.Assembly]::LoadFrom(“htmldiff.dll”)
+        $ass=join-path $path "HtmlDiff.dll"
+        Write-Verbose "$(Get-Date -Format "HH:mm:ss") : Loading: $ass"
+		$rc=[Reflection.Assembly]::LoadFrom($ass)
 		Write-Verbose "$(Get-Date -Format "HH:mm:ss") : Loaded: $rc"
 	} catch {
 		Write-Error "C:\SBP\Scripts\htmldiff.dll could not be loaded!"
@@ -37,6 +39,70 @@ Function LoadConfig {
 		Write-Error "Error loading config $filename"
 	}
 	$config.Configuration
+}
+Function CreateConfig {
+	[cmdletbinding()]
+	param ($filename)
+	$xmldoc=new-object System.Xml.XmlDocument
+	$xmlconfig=$xmldoc.CreateElement("Configuration")
+	$xmldomains=$xmldoc.CreateElement("Domains")
+	
+	$trusteddomains=Get-ADTrust -Filter *
+	foreach ($trusteddomain in $trusteddomains) {
+		$xmldomain=$xmldoc.CreateElement("Domain")		
+		$xmldomain.SetAttribute("Name",$trusteddomain.Name)
+		$xmldomain.SetAttribute("GPOPrefix",$trusteddomain.Name.Substring(3,1)+'_')
+		$xmldomain.SetAttribute("ShortName",$trusteddomain.Name.Split('.')[0])
+		$xmldomain.SetAttribute("GPOBackupPath","c:\GPOBackup\$($trusteddomain.Name)\Backups" )
+		$xmldomain.SetAttribute("GPOReportPath","C:\GPOBackup\$($trusteddomain.Name)\Reports")
+		$xmldomain.SetAttribute("GPOLinkReportPath","C:\GPOBackup\$($trusteddomain.Name)\GPOLinkReports")
+		$xmldomain.SetAttribute("OUReportPath","C:\GPOBackup\$($trusteddomain.Name)\OUReports")
+		$xmldomains.AppendChild($xmldomain)
+		Remove-Variable xmldomain
+	}
+	$xmlReports=$xmldoc.CreateElement("Reports")
+	$xmlReports.SetAttribute("OUDiffPath","C:\GPOBackup\OUDiff")
+	$xmlReports.SetAttribute("GPDiffPath","C:\GPOBackup\GPDiff")
+	$xmlReports.SetAttribute("ObsoletedGPOsPath","C:\GPOBackup\Obsoleted GPOs")
+	$xmlReports.SetAttribute("GPLinkDiffPath","C:\GPOBackup\GPLinkDiff")
+	$xmldomains.AppendChild($xmlReports)
+	$xmlconfig.AppendChild($xmldomains)
+	
+	$xmlmail=$xmldoc.CreateElement("Mail")
+	$xmlmail.SetAttribute("SmtpHost","mail")
+	$xmlmail.SetAttribute("recipient","rmul@schubergphilis.com")
+	$xmlmail.SetAttribute("sender","ENG_AD_Police_DEV@engmdc11.engm.local")
+	$xmlGPOChangeReport=$xmldoc.CreateElement("GPOChangeReport")
+	$xmlGPOChangeReport.SetAttribute("Recipient","rmul@schubergphilis.com")
+	$xmlGPOChangeReport.SetAttribute("Sender","ENG_AD_Police_DEV@engmdc11.engm.local")
+	$xmlGPOChangeReport.SetAttribute("Subject","ENG GPO Change Report")
+	$xmlmail.AppendChild($xmlGPOChangeReport)
+	$xmlOUChangedReport=$xmldoc.CreateElement("OUChangedReport")
+	$xmlOUChangedReport.SetAttribute("Recipient","rmul@schubergphilis.com")
+	$xmlOUChangedReport.SetAttribute("Sender","ENG_AD_Police_DEV@engmdc11.engm.local")
+	$xmlOUChangedReport.SetAttribute("Subject","ENG OU Change Report")
+	$xmlmail.AppendChild($xmlOUChangedReport)  
+	$xmlconfig.AppendChild($xmlmail)
+	
+	$xmlGPOBackup=$xmldoc.CreateElement("GPOBackup")
+	$xmlGPOBackup.SetAttribute("Recipient","rmul@schubergphilis.com")
+	$xmlGPOBackup.SetAttribute("Sender","ENG_AD_Police_DEV@engmdc11.engm.local")
+	$xmlGPOBackup.SetAttribute("Subject","GPO Change Report")
+	$xmlGPOBackup.SetAttribute("SaveDiffReports","true")
+	$xmlGPOBackup.SetAttribute("AttachDiffReports","true")
+	$xmlGPOBackup.SetAttribute("SendResult","true")
+	$xmlconfig.AppendChild($xmlGPOBackup)  
+
+	$xmlGPOLinkReport=$xmldoc.CreateElement("GPOLinkReport")
+	$xmlGPOLinkReport.SetAttribute("Recipient","rmul@schubergphilis.com")
+	$xmlGPOLinkReport.SetAttribute("Sender","ENG_AD_Police_DEV@engmdc11.engm.local")
+	$xmlGPOLinkReport.SetAttribute("Subject","GPOLinks Change Report")
+	$xmlGPOLinkReport.SetAttribute("SaveDiffReports","true")
+	$xmlGPOLinkReport.SetAttribute("AttachDiffReports","true")
+	$xmlGPOLinkReport.SetAttribute("SendResult","true")
+	$xmlconfig.AppendChild($xmlGPOLinkReport)  
+
+	$xmlconfig
 }
 function Send-SMTPmail($to, $from, $subject, $body, $attachment, $cc, $bcc, $port, $timeout, $smtpserver, [switch] $html, [switch] $alert) {
     if ($smtpserver -eq $null) {$smtpserver = "mail"}
@@ -66,6 +132,7 @@ function Get-OU-Report {
 	}
 	$myruntime=$(Get-Date -Format "yyyyMMddHHmmss")
 	
+	New-Item -ItemType Directory -Force -Path $ConfigDomain.GPOLinkReportPath
 	$dc=$(Get-ADDomainController -DomainName $ConfigDomain.Name -Discover).Name+"."+$ConfigDomain.Name
 	Write-Verbose "$(Get-Date -Format "HH:mm:ss") $($ConfigDomain.Name): Found DC $dc"
 	$DomainDN="DC="+$ConfigDomain.Name.split('.')[0]+",DC="+$ConfigDomain.Name.split('.')[1]
@@ -77,6 +144,9 @@ function Get-OU-Report {
 	$gpinheritance+=$adous|%{(Get-GPInheritance -Target $_ -Domain $ConfigDomain.Name)}
 	Write-Verbose "$(Get-Date -Format "HH:mm:ss") $($ConfigDomain.Name): Searching most recent GPOLinkreport in $($ConfigDomain.GPOLinkReportPath)"
 	[array]$oldreports=get-childitem "$($ConfigDomain.GPOLinkReportPath)\*" -Include "GpoLinkReport_*.html" | sort CreationTime
+	if ($oldreports.count -eq 0) {
+		[array]$oldreports=get-childitem ".\*" -Include "Empty.html"
+	}
 	Write-Verbose "$(Get-Date -Format "HH:mm:ss") $($ConfigDomain.Name): Getting content from $($oldreports[-1])"
 	$oldreport=Get-Content $oldreports[-1]
 
@@ -88,13 +158,13 @@ function Get-OU-Report {
 	Write-Verbose "$(Get-Date -Format "HH:mm:ss") $($ConfigDomain.Name): Comparing $($oldreports[-1]) with current report"
 	$compare=Compare-Object $oldreport $report
 	if ($compare) {
-		Write-Verbose "$(Get-Date -Format "HH:mm:ss") $($ConfigDomain.name): GPO Links changed, Saving current report to $($ConfigDomain.GPOLinkReportPath)\GpoLinkReport_$myruntime.html"
+		Write-Verbose "$(Get-Date -Format "HH:mm:ss") $($ConfigDomain.name): GPO Links changed, Saving current report to $($ConfigDomain.GPOLinkReportPath)\GpoLinkReport_$myruntime.html"		
 		$report | Out-File "$($ConfigDomain.GPOLinkReportPath)\GpoLinkReport_$myruntime.html"
 		if ($config.GPOLinkReport.SaveDiffReports -eq "true") {
 			Write-Verbose "$(Get-Date -Format "HH:mm:ss") $($ConfigDomain.name): Creating Diff report $($ConfigDomain.GPOLinkReportPath)\GpoLinkReportDiff_$myruntime.html"
 			[Helpers.HtmlDiff] $diff=new-object helpers.HtmlDiff($oldreport, $report)
 			$html=$diff.Build()
-			$style="<style type=""text/css"">"+$(Get-Content "$($ConfigDomain.GPOLinkReportPath)\GpoLinkReport.css")+"</style>"
+			$style="<style type=""text/css"">"+$(Get-Content ".\GpoLinkReport.css")+"</style>"
 			$html=$html.Replace("<link rel=""stylesheet"" type=""text/css"" href=""GpoLinkReport.css"" />",$style)
 			$html=$html.Replace("</h1>","</h1><h2>Generated on $now</h2>")
 			$html | Out-File "$($ConfigDomain.GPOLinkReportPath)\GpoLinkReportDiff_$myruntime.html"
@@ -124,7 +194,7 @@ Function Get-PreviousReport($ConfigDomain=$(throw "ConfigDomain required."),$gpo
 	$gporeports=Get-ChildItem -Path "$($ConfigDomain.GPOReportPath)\*" -Include "$($gponame)_[0-9]*.html"
 	$tempje=$currentreport.split('_')
 	$currentreportdate=[DateTime]::ParseExact($tempje[$tempje.Count-2],"M-d-yyyy",[System.Globalization.CultureInfo]::InvariantCulture)
-	$previousreport="C:\SBP\Scripts\empty.html"
+	$previousreport=".\empty.html"
 	$datediff=New-TimeSpan
 	if ($gporeports) {
 		foreach ($report in $gporeports) {
@@ -163,6 +233,7 @@ function Add-Node {
 function ou-treenodes {
 	[cmdletbinding()]
 	param ($node,$dn,$svr)	
+	Write-Verbose "$(Get-Date -Format "HH:mm:ss") : `tOU-Treenodes for $dn"
 	Get-ADOrganizationalUnit -Server $dc -Filter * -SearchScope 1 -SearchBase $dn | %{
 		$_.distinguishedname
 		$newnode=add-node $node $_.Name $_.Name
@@ -170,7 +241,7 @@ function ou-treenodes {
 	}
 }
 Function Compare-OU-Trees($domains2compare){
-
+	Write-Verbose "$(Get-Date -Format "HH:mm:ss") : Comparing $domains2compare"
 	$domainous=New-Object System.Windows.Forms.TreeNode
 	$domainous.Name = "Compared" 
     $domainous.Text = "All Domains" 
@@ -178,6 +249,7 @@ Function Compare-OU-Trees($domains2compare){
 	$domainous.ImageKey = "Blank"
 	
 	foreach ($domain in $domains2compare) {
+		Write-Verbose "$(Get-Date -Format "HH:mm:ss") : `tAdding $($domain.Name) to tree"
 		$ous=New-Object System.Windows.Forms.TreeNode
 		$dc=$(Get-ADDomainController -DomainName $domain.Name -Discover).Name+"."+$domain.Name
 		$dom= Get-ADDomain -Server $dc		
@@ -188,9 +260,12 @@ Function Compare-OU-Trees($domains2compare){
 	}
 	$alldomainous=New-Object System.Windows.Forms.TreeNode
 	foreach ($n in $domainous.Nodes) {
+		write-verbose "$(Get-Date -Format "HH:mm:ss") : `tDoing sometihing $($n.name)"
 		if (!($alldomainous.nodes[$n.name])) { $alldomainous.nodes.add($n.name,$n.name) }
 		# if (!($x.Tag -band [Math]::Pow(2,$y))) {$x.Tag+= [Math]::Pow(2,$y)} else {write-host $x.Tag}
-		if (!($alldomainous.nodes[$n.name].Tag -band [Math]::Pow(2,[array]::IndexOf($domains2compare,$domain)))) {$x.Tag+= [Math]::Pow(2,[array]::IndexOf($domains2compare,$domain))}
+		Write-verbose "$($alldomainous.nodes[$n.name].Tag)"
+		if (!($alldomainous.nodes[$n.name].Tag -band [Math]::Pow(2,[array]::IndexOf($domains2compare,$domain)))) {$alldomainous.nodes[$n.name].Tag+= [Math]::Pow(2,[array]::IndexOf($domains2compare,$domain))}
+		Write-verbose $alldomainous.nodes[$n.name].Tag
 	}
 	$alldomainous
 	
@@ -375,10 +450,10 @@ function Get-CSS([string]$StyleSheet="ADPolice.css") {
 }
 function Get-GPOXMLReports($DomainName){
 	Write-Verbose "$(Get-Date -Format "HH:mm:ss") $($DomainName): Getting XML GPOReports"
-	[array]$array=Get-GPOReport -Domain $DomainName -all -ReportType xml | %{
+	[array]$array=Get-GPO -Domain $DomainName -all |Get-GPOReport -Domain $DomainName -ReportType xml | %{
 		([xml]$_).gpo | select name,@{n="SOMName";e={$_.LinksTo | % {$_.SOMName}}},@{n="SOMPath";e={$_.LinksTo | %{$_.SOMPath}}},@{n="Computer";e={$_.Computer.ExtensionData}},@{n="User";e={$_.User.ExtensionData}},@{n="ComputerEnabled";e={$_.Computer.Enabled}},@{n="UserEnabled";e={$_.User.Enabled}}		
 	}
-	Write-Verbose "$(Get-Date -Format "HH:mm:ss") $DomainName: Retrieved $($array.count) XML GPOReports"
+	Write-Verbose "$(Get-Date -Format "HH:mm:ss") $DomainName : Retrieved $($array.count) XML GPOReports"
 	$array
 }
 function Get-UnlinkedGPOs{
@@ -432,8 +507,10 @@ function BogusGPOstotable{
 		}
 	}
 	$HTMLtable="<table align=""center"" width=""100%"" border=""0""><Caption>Not Applicable GPO's</Caption><tr><th width=""20%"">Domain</th><th width=""50%"">GPO</th><th width=""10%"">Unlinked</th><th width=""10%"">Non-empty Settings<br>Disabled</th><th width=""10%"">Enabled Settings<br>Empty</th></tr>"
-	foreach ($row in $allbogusGPOs.Keys) {
-		$HTMLtable+="<tr><td>$($allbogusGPOs.Item($row).Domain)</td><td>$($allbogusGPOs.Item($row).GPO)</td><td>$($allbogusGPOs.Item($row).Unlinked)</td><td>$($allbogusGPOs.Item($row).Disabled)</td><td>$($allbogusGPOs.Item($row).Empty)</td></tr>`n"
+	#foreach ($row in $allbogusGPOs.Keys) {
+	foreach($row in $allbogusGPOs.GetEnumerator()| sort {$_.value.gpo.substring(2)}) {
+		#$HTMLtable+="<tr><td>$($allbogusGPOs.Item($row).Domain)</td><td>$($allbogusGPOs.Item($row).GPO)</td><td>$($allbogusGPOs.Item($row).Unlinked)</td><td>$($allbogusGPOs.Item($row).Disabled)</td><td>$($allbogusGPOs.Item($row).Empty)</td></tr>`n"
+		$HTMLtable+="<tr><td>$($row.Value.Domain)</td><td>$($row.Value.GPO)</td><td>$($row.Value.Unlinked)</td><td>$($row.Value.Disabled)</td><td>$($row.Value.Empty)</td></tr>`n"
 	}
 	$HTMLtable+="</table>"
 	$HTMLtable
@@ -567,7 +644,7 @@ param(
 			}
 		} else {
 			$result+="$(Get-Date -Format "HH:mm:ss") $($ConfigDomain.Name): $($GPO.DisplayName), No previous backup found, so created backup`r`n"
-			$result+=get-gpochange-auditevent -gpo $gpo
+			#$result+=get-gpochange-auditevent -gpo $gpo
 			write-verbose "$(Get-Date -Format "HH:mm:ss") $($ConfigDomain.Name): `tNo previous backup found, so need backup"
 			$needbackup=$true
 		}

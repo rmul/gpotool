@@ -39,70 +39,59 @@ Function LoadConfig {
 	}
 	$config.Configuration
 }
-Function CreateConfig {
+
+Write-Verbose "`t`tGetTrustedDomains - Queries trused domains and returns configuration-section as xml-object"
+Function GetTrustedDomains {
 	[cmdletbinding()]
-	param ($filename)
+	param ($config)
 	$xmldoc=new-object System.Xml.XmlDocument
-	$xmlconfig=$xmldoc.CreateElement("Configuration")
-	$xmldomains=$xmldoc.CreateElement("Domains")
-	
-	$trusteddomains=Get-ADTrust -Filter *
+	$xmldomains=@()
+	Write-Verbose "Querying trusted domains"
+	[array]$trusteddomains=Get-ADTrust -Filter *
+	Write-Verbose "Found $($trusteddomains.count) domains"
 	foreach ($trusteddomain in $trusteddomains) {
-		$xmldomain=$xmldoc.CreateElement("Domain")		
+		$xmldomain=$xmldoc.CreateElement("Domain")
 		$xmldomain.SetAttribute("Name",$trusteddomain.Name)
+		$xmldomain.SetAttribute("Type","Trusted")
+		$xmldomain.SetAttribute("Backup",$config.Backup.includeTrustedDomains)
+		$xmldomain.SetAttribute("Report",$config.Report.includeTrustedDomains)
+		$xmldomain.SetAttribute("Compare",$config.Compare.includeTrustedDomains)
 		$xmldomain.SetAttribute("GPOPrefix",$trusteddomain.Name.Substring(3,1)+'_')
 		$xmldomain.SetAttribute("ShortName",$trusteddomain.Name.Split('.')[0])
-		$xmldomain.SetAttribute("GPOBackupPath","c:\GPOBackup\$($trusteddomain.Name)\Backups" )
-		$xmldomain.SetAttribute("GPOReportPath","C:\GPOBackup\$($trusteddomain.Name)\Reports")
-		$xmldomain.SetAttribute("GPOLinkReportPath","C:\GPOBackup\$($trusteddomain.Name)\GPOLinkReports")
-		$xmldomain.SetAttribute("OUReportPath","C:\GPOBackup\$($trusteddomain.Name)\OUReports")
-		$xmldomains.AppendChild($xmldomain)
+		$xmldomain.SetAttribute("GPOBackupPath",[io.path]::combine($config.Export.path,$trusteddomain.Name,"Backups"))
+		$xmldomain.SetAttribute("GPOReportPath",[io.path]::combine($config.Export.path,$trusteddomain.Name,"Reports"))
+		$xmldomain.SetAttribute("GPOLinkReportPath",[io.path]::combine($config.Export.path,$trusteddomain.Name,"GPOLinkReports"))
+		$xmldomain.SetAttribute("OUReportPath",[io.path]::combine($config.Export.path,$trusteddomain.Name,"OUReports"))
+		$xmldomains+=$xmldomain
 		Remove-Variable xmldomain
 	}
-	$xmlReports=$xmldoc.CreateElement("Reports")
-	$xmlReports.SetAttribute("OUDiffPath","C:\GPOBackup\OUDiff")
-	$xmlReports.SetAttribute("GPDiffPath","C:\GPOBackup\GPDiff")
-	$xmlReports.SetAttribute("ObsoletedGPOsPath","C:\GPOBackup\Obsoleted GPOs")
-	$xmlReports.SetAttribute("GPLinkDiffPath","C:\GPOBackup\GPLinkDiff")
-	$xmldomains.AppendChild($xmlReports)
-	$xmlconfig.AppendChild($xmldomains)
-	
-	$xmlmail=$xmldoc.CreateElement("Mail")
-	$xmlmail.SetAttribute("SmtpHost","mail")
-	$xmlmail.SetAttribute("recipient","rmul@schubergphilis.com")
-	$xmlmail.SetAttribute("sender","ENG_AD_Police_DEV@engmdc11.engm.local")
-	$xmlGPOChangeReport=$xmldoc.CreateElement("GPOChangeReport")
-	$xmlGPOChangeReport.SetAttribute("Recipient","rmul@schubergphilis.com")
-	$xmlGPOChangeReport.SetAttribute("Sender","ENG_AD_Police_DEV@engmdc11.engm.local")
-	$xmlGPOChangeReport.SetAttribute("Subject","ENG GPO Change Report")
-	$xmlmail.AppendChild($xmlGPOChangeReport)
-	$xmlOUChangedReport=$xmldoc.CreateElement("OUChangedReport")
-	$xmlOUChangedReport.SetAttribute("Recipient","rmul@schubergphilis.com")
-	$xmlOUChangedReport.SetAttribute("Sender","ENG_AD_Police_DEV@engmdc11.engm.local")
-	$xmlOUChangedReport.SetAttribute("Subject","ENG OU Change Report")
-	$xmlmail.AppendChild($xmlOUChangedReport)  
-	$xmlconfig.AppendChild($xmlmail)
-	
-	$xmlGPOBackup=$xmldoc.CreateElement("GPOBackup")
-	$xmlGPOBackup.SetAttribute("Recipient","rmul@schubergphilis.com")
-	$xmlGPOBackup.SetAttribute("Sender","ENG_AD_Police_DEV@engmdc11.engm.local")
-	$xmlGPOBackup.SetAttribute("Subject","GPO Change Report")
-	$xmlGPOBackup.SetAttribute("SaveDiffReports","true")
-	$xmlGPOBackup.SetAttribute("AttachDiffReports","true")
-	$xmlGPOBackup.SetAttribute("SendResult","true")
-	$xmlconfig.AppendChild($xmlGPOBackup)  
-
-	$xmlGPOLinkReport=$xmldoc.CreateElement("GPOLinkReport")
-	$xmlGPOLinkReport.SetAttribute("Recipient","rmul@schubergphilis.com")
-	$xmlGPOLinkReport.SetAttribute("Sender","ENG_AD_Police_DEV@engmdc11.engm.local")
-	$xmlGPOLinkReport.SetAttribute("Subject","GPOLinks Change Report")
-	$xmlGPOLinkReport.SetAttribute("SaveDiffReports","true")
-	$xmlGPOLinkReport.SetAttribute("AttachDiffReports","true")
-	$xmlGPOLinkReport.SetAttribute("SendResult","true")
-	$xmlconfig.AppendChild($xmlGPOLinkReport)  
-
-	$xmlconfig
+	$xmldomains
 }
+
+Write-Verbose "`t`tGetLocalDomain - Queries local domains and returns configuration-section as xml-object"
+Function GetLocalDomain {
+	[cmdletbinding()]
+	param ($config)
+	$xmldoc=new-object System.Xml.XmlDocument
+	Write-Verbose "Querying local domain"
+	$localdomain=Get-ADDomain -current LocalComputer
+	Write-Verbose "Found domain $($localdomain.DNSRoot)"
+	$xmldomain=$xmldoc.CreateElement("Domain")		
+	$xmldomain.SetAttribute("Name",$localdomain.DNSRoot)
+	$xmldomain.SetAttribute("Type","Local")
+	$xmldomain.SetAttribute("Backup",$config.Backup.includeLocalDomain)
+	$xmldomain.SetAttribute("Report",$config.Report.includeLocalDomain)
+	$xmldomain.SetAttribute("Compare",$config.Compare.includeLocalDomain)
+	$xmldomain.SetAttribute("GPOPrefix",$localdomain.DNSRoot.Substring(3,1)+'_')
+	$xmldomain.SetAttribute("ShortName",$localdomain.DNSRoot.Split('.')[0])
+	$xmldomain.SetAttribute("GPOBackupPath",[io.path]::combine($config.Export.path,$localdomain.DNSRoot,"Backups"))
+	$xmldomain.SetAttribute("GPOReportPath",[io.path]::combine($config.Export.path,$localdomain.DNSRoot,"Reports"))
+	$xmldomain.SetAttribute("GPOLinkReportPath",[io.path]::combine($config.Export.path,$localdomain.DNSRoot,"GPOLinkReports"))
+	$xmldomain.SetAttribute("OUReportPath",[io.path]::combine($config.Export.path,$localdomain.DNSRoot,"OUReports"))
+	
+	$xmldomain
+}
+
 function Send-SMTPmail($to, $from, $subject, $body, $attachment, $cc, $bcc, $port, $timeout, $smtpserver, [switch] $html, [switch] $alert) {
     if ($smtpserver -eq $null) {$smtpserver = "mail"}
     $mailer = new-object Net.Mail.SMTPclient($smtpserver)
@@ -381,7 +370,7 @@ function OutputOUGPOLinkTableHeader {
 function OutputGPOLinkTableHeader {
 	$tableheader="<table border=""2"" width=""100%"">"
 	$tableheader+="<tr><th width=""25%"">OU</th><th width=""25%"">GPO</th><th width=""10%"">Enabled</th><th width=""10%"">Order</th>"
-	foreach ($domain in $domains) {
+	foreach ($domain in ($domains|?{[System.Convert]::ToBoolean($_.Compare)})) {
 		$tableheader+="<th>$($domain.ShortName)</th>"
 	}
 	$tableheader+="</tr>"
@@ -425,7 +414,7 @@ function OutputGPOLinkTable ($gpolinksarray) {
 	$tablerow=""
 	$gpolinksarray |foreach {
 		$tablerow+="<tr><td  class=""internal"" width=""30%"">$($_.Target)</td><td class=""internal"" width=""50%"">$($_.DisplayName)</td><td class=""internal"" width=""10%"">$($_.Enabled)</td><td class=""internal"" width=""10%"">$($_.Order)</td>"
-		foreach ($domain in $domains) {
+		foreach ($domain in ($domains|?{[System.Convert]::ToBoolean($_.Compare)})) {
 			if ($_.($domain.ShortName)) {
 				$tablerow+="<td class=""internal"">$($_.($domain.ShortName))</td>"
 			} else {

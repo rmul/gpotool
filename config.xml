@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <Configuration>
-	<Domains includeLocalDomain="true" includeTrustedDomains="true" />
+	<Backup includeLocalDomain="true" includeTrustedDomains="true" />
+	<Report includeLocalDomain="false" includeTrustedDomains="true" />
+	<Compare includeLocalDomain="false" includeTrustedDomains="true" />
   	<Mail 
   		Recipient="rmul@schubergphilis.com"
 		Sender="EET_AD_Police@eetmdc11.eetm.local"
 		Subject="EET AD Police Report"
-		Host="mail"
+		SmtpHost="mail"
   	/>
   	<Export path="C:\GPOBackup"	/>
 </Configuration>

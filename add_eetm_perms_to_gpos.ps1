@@ -24,14 +24,14 @@ foreach ($domain in $Domains) {
 	$gpos |%{
 		#$_.Displayname
 		try {
-			$perm=Get-GPPermissions $_.displayname -DomainName $domain.name -TargetName "eetm\domain admins" -TargetType Group -ErrorAction SilentlyContinue
+			$perm=Get-GPPermissions $_.displayname -DomainName $domain.name -TargetName "engm\domain admins" -TargetType Group -ErrorAction SilentlyContinue
 		} catch {
 			$_.Displayname
-			#$perm=set-GPPermissions $_.displayname -DomainName $domain.name -TargetName "eetm\domain admins" -TargetType Group -PermissionLevel GpoEditDeleteModifySecurity
+			#$perm=set-GPPermissions $_.displayname -DomainName $domain.name -TargetName "engm\domain admins" -TargetType Group -PermissionLevel GpoEditDeleteModifySecurity
 		}
 		if (!$perm) {
 			"`t$($_.Displayname)"
-			$perm=set-GPPermissions $_.displayname -DomainName $domain.name -TargetName "eetm\domain admins" -TargetType Group -PermissionLevel GpoEditDeleteModifySecurity
+			$perm=set-GPPermissions $_.displayname -DomainName $domain.name -TargetName "engm\domain admins" -TargetType Group -PermissionLevel GpoEditDeleteModifySecurity
 		}
 	}
 }

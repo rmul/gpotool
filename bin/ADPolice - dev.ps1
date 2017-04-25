@@ -30,7 +30,7 @@ LoadHTMLDiff $path\..\lib\htmldiff.dll
 $config=LoadConfig $InputFile
 $config=CreateConfig
 $Domains=$config.Domains.Domain
-$cssstyle=Get-CSS
+$cssstyle=Get-CSS $path\..\var\gpotool-basic.css
 #endregion Load Config
 
 

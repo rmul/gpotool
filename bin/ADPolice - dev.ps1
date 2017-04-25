@@ -33,7 +33,7 @@ $Domains=$config.Domains.Domain
 $cssstyle=Get-CSS $path\..\var\gpotool-basic.css
 #endregion Load Config
 
-
+$domains 
 break
 
 #region Backup GPOs

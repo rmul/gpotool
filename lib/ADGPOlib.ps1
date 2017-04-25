@@ -61,6 +61,18 @@ Function CreateConfig {
 	$xmlconfig=$xmldoc.CreateElement("Configuration")
 	$xmldomains=$xmldoc.CreateElement("Domains")
 	
+    $domain= Get-ADDomain
+    $xmldomain=$xmldoc.CreateElement("Domain")		
+	$xmldomain.SetAttribute("Name",$domain.Name)
+	$xmldomain.SetAttribute("GPOPrefix",$domain.Name.Substring(3,1)+'_')
+	$xmldomain.SetAttribute("ShortName",$domain.Name.Split('.')[0])
+	$xmldomain.SetAttribute("GPOBackupPath","c:\GPOBackup\$($domain.Name)\Backups" )
+	$xmldomain.SetAttribute("GPOReportPath","C:\GPOBackup\$($domain.Name)\Reports")
+	$xmldomain.SetAttribute("GPOLinkReportPath","C:\GPOBackup\$($domain.Name)\GPOLinkReports")
+	$xmldomain.SetAttribute("OUReportPath","C:\GPOBackup\$($domain.Name)\OUReports")
+	$xmldomains.AppendChild($xmldomain)
+	Remove-Variable xmldomain
+
 	$trusteddomains=Get-ADTrust -Filter *
 	foreach ($trusteddomain in $trusteddomains) {
 		$xmldomain=$xmldoc.CreateElement("Domain")		

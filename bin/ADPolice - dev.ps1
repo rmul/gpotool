@@ -1,31 +1,29 @@
 [CmdletBinding()] 
-param([string]$InputFile=".\domains.xml",[Switch]$Dev)
+param([string]$InputFile="..\etc\domains.xml",[Switch]$Dev)
 
 cls
 $path=Split-Path $MyInvocation.MyCommand.Path
-#cd (Split-Path $MyInvocation.MyCommand.Path)
+write-host $path
 cd $path
+
 $runtime=$(Get-Date -Format "yyyyMMddHHmmss")
 
 $RunInIse = ($host.Name -eq 'PowerGUIScriptEditorHost') -or ($host.Name -match 'ISE')
-$RunInIse=$false
 if (!$RunInIse) { Start-Transcript -IncludeInvocationHeader -Path .\log\adpolice.$($runtime).log}
 
-Function My-Verbose {
-	[cmdletbinding()]
-	param ([string]$message,[int]$indent=0)
-    $spacing=3*$indent
-    Write-Verbose (“{0} : {1,$spacing}{2}” –f (Get-Date -Format "HH:mm:ss"),"-",$message)
-}
-
 #region Load Modules
+try {
+    . $path\..\lib\ADGPOlib.ps1
+} catch {
+    Write-Error "Error Loading required ADGPOlib.ps1"
+    return 1
+}
 My-Verbose "Importing ActiveDirectory Module" 
 Import-Module activedirectory -Verbose:$false
-My-Verbose "Importing GroupPolicy Module" 1
+My-Verbose "Importing GroupPolicy Module"
 Import-Module grouppolicy -Verbose:$false
-My-Verbose "Importing ADGPOlib.ps1" 2
-. .\lib\ADGPOlib.ps1
-LoadHTMLDiff
+My-Verbose "Loading HTMLDiff"
+LoadHTMLDiff $path\..\lib\htmldiff.dll
 #endregion Load Modules
 
 #region Load Config
@@ -34,6 +32,9 @@ $config=CreateConfig
 $Domains=$config.Domains.Domain
 $cssstyle=Get-CSS
 #endregion Load Config
+
+
+break
 
 #region Backup GPOs
 Write-Verbose "$(Get-Date -Format "HH:mm:ss") : Region Backup GPOs"

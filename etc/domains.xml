@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Configuration>
+  <Domains>
+	<Domain Name="engt.local" 
+		GPOPrefix="T_"
+		ShortName="engt"
+		GPOBackupPath="c:\GPOBackup\ENGT.local\Backups" 
+		GPOReportPath="C:\GPOBackup\ENGT.local\Reports"
+		GPOLinkReportPath="C:\GPOBackup\ENGT.local\GPOLinkReports"
+		OUReportPath="C:\GPOBackup\ENGT\OUReports"
+	/>	  
+	<Domain Name="enga.local" 
+		GPOPrefix="A_"
+		ShortName="enga"
+		GPOBackupPath="C:\GPOBackup\ENGA.local\Backups" 
+		GPOReportPath="C:\GPOBackup\ENGA.local\Reports"
+		GPOLinkReportPath="C:\GPOBackup\ENGA.local\GPOLinkReports"
+		OUReportPath="C:\GPOBackup\ENGA\OUReports"
+	/>	  
+	<Domain Name="engp.local" 
+		GPOPrefix="P_" 
+		ShortName="engp"
+		GPOBackupPath="C:\GPOBackup\ENGP.local\Backups" 
+		GPOReportPath="C:\GPOBackup\ENGP.local\Reports"
+		GPOLinkReportPath="C:\GPOBackup\ENGP.local\GPOLinkReports"
+		OUReportPath="C:\GPOBackup\ENGP\OUReports"/>
+	<Reports 
+		OUDiffPath="C:\GPOBackup\OUDiff"
+		GPDiffPath="C:\GPOBackup\GPDiff"
+		ObsoletedGPOsPath="C:\GPOBackup\Obsoleted GPOs"
+		GPLinkDiffPath="C:\GPOBackup\GPLinkDiff"
+	/>
+  </Domains>
+  <Mail SmtpHost="mail" recipient="rmul@schubergphilis.com" sender="ENG_AD_Police_DEV@engmdc11.engm.local">
+  	<GPOChangeReport
+  		Recipient="rmul@schubergphilis.com"
+		Sender="ENG_AD_Police_DEV@engmdc11.engm.local"
+		Subject="ENG GPO Change Report"/>
+	<OUChangedReport
+  		Recipient="rmul@schubergphilis.com"
+		Sender="ENG_AD_Police_DEV@engmdc11.engm.local"
+		Subject="ENG OU Change Report"/>	
+  </Mail>
+  <GPOBackup
+  	Recipient="rmul@schubergphilis.com"
+	Sender="ENG_AD_Police_DEV@engmdc11.engm.local"
+	Subject="GPO Change Report"
+	SaveDiffReports="true"
+	AttachDiffReports="true"
+	SendResult="true"
+  />
+  <GPOLinkReport
+  	Recipient="rmul@schubergphilis.com"
+	Sender="ENG_AD_Police_DEV@engmdc11.engm.local"
+	Subject="GPOLinks Change Report"
+	SaveDiffReports="true"
+	AttachDiffReports="true"
+	SendResult="true"
+  />
+</Configuration>

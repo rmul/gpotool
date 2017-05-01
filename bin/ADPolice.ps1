@@ -9,7 +9,7 @@ cd $path
 $runtime=$(Get-Date -Format "yyyyMMddHHmmss")
 
 $RunInIse = ($host.Name -eq 'PowerGUIScriptEditorHost') -or ($host.Name -match 'ISE')
-if (!$RunInIse) { Start-Transcript -IncludeInvocationHeader -Path .\log\adpolice.$($runtime).log}
+if (!$RunInIse) { Start-Transcript -IncludeInvocationHeader -Path ..\log\adpolice.$($runtime).log}
 
 #region Load Modules
 try {

@@ -63,7 +63,7 @@ Function CreateConfig {
 	
     $domain= Get-ADDomain
     $xmldomain=$xmldoc.CreateElement("Domain")		
-	$xmldomain.SetAttribute("Name",$domain.Name)
+	$xmldomain.SetAttribute("Name",$domain.DNSRoot)
 	$xmldomain.SetAttribute("GPOPrefix",$domain.Name.Substring(3,1)+'_')
 	$xmldomain.SetAttribute("ShortName",$domain.Name.Split('.')[0])
 	$xmldomain.SetAttribute("GPOBackupPath","c:\GPOBackup\$($domain.Name)\Backups" )
@@ -172,7 +172,7 @@ function Get-OU-Report {
 	My-Verbose "$(Get-Date -Format "HH:mm:ss") $($ConfigDomain.Name): Searching most recent GPOLinkreport in $($ConfigDomain.GPOLinkReportPath)"
 	[array]$oldreports=get-childitem "$($ConfigDomain.GPOLinkReportPath)\*" -Include "GpoLinkReport_*.html" | sort CreationTime
 	if ($oldreports.count -eq 0) {
-		[array]$oldreports=get-childitem ".\*" -Include "Empty.html"
+		[array]$oldreports=get-childitem "..\var\*" -Include "Empty.html"
 	}
 	My-Verbose "$(Get-Date -Format "HH:mm:ss") $($ConfigDomain.Name): Getting content from $($oldreports[-1])"
 	$oldreport=Get-Content $oldreports[-1]
@@ -191,7 +191,7 @@ function Get-OU-Report {
 			My-Verbose "$(Get-Date -Format "HH:mm:ss") $($ConfigDomain.name): Creating Diff report $($ConfigDomain.GPOLinkReportPath)\GpoLinkReportDiff_$myruntime.html"
 			[Helpers.HtmlDiff] $diff=new-object helpers.HtmlDiff($oldreport, $report)
 			$html=$diff.Build()
-			$style="<style type=""text/css"">"+$(Get-Content ".\GpoLinkReport.css")+"</style>"
+			$style="<style type=""text/css"">"+$(Get-Content "..\var\GpoLinkReport.css")+"</style>"
 			$html=$html.Replace("<link rel=""stylesheet"" type=""text/css"" href=""GpoLinkReport.css"" />",$style)
 			$html=$html.Replace("</h1>","</h1><h2>Generated on $now</h2>")
 			$html | Out-File "$($ConfigDomain.GPOLinkReportPath)\GpoLinkReportDiff_$myruntime.html"
@@ -221,7 +221,7 @@ Function Get-PreviousReport($ConfigDomain=$(throw "ConfigDomain required."),$gpo
 	$gporeports=Get-ChildItem -Path "$($ConfigDomain.GPOReportPath)\*" -Include "$($gponame)_[0-9]*.html"
 	$tempje=$currentreport.split('_')
 	$currentreportdate=[DateTime]::ParseExact($tempje[$tempje.Count-2],"M-d-yyyy",[System.Globalization.CultureInfo]::InvariantCulture)
-	$previousreport=".\empty.html"
+	$previousreport="..\var\Empty.html"
 	$datediff=New-TimeSpan
 	if ($gporeports) {
 		foreach ($report in $gporeports) {
@@ -464,7 +464,7 @@ function OutputGPOLinkTable ($gpolinksarray) {
 	}
 	$tablerow
 }
-function Get-CSS([string]$StyleSheet="ADPolice.css") {
+function Get-CSS([string]$StyleSheet="..\var\ADPolice.css") {
 	<#  
 	.SYNOPSIS  
     	Returns css style string loaded from inputfile  
@@ -486,7 +486,9 @@ function Get-GPOXMLReports($DomainName){
 function Get-UnlinkedGPOs{
 	[cmdletbinding()]
 	param($ConfigDomain)
-	$ConfigDomain.GPOXMLReports | where {$_.SomName -eq $null}| foreach {Get-GPO -Domain $ConfigDomain.Name -Name $_.name}
+	foreach ($xmlreport in ($ConfigDomain.GPOXMLReports | where {$_.SomName -eq $null})) {
+        Get-GPO -Domain $ConfigDomain.Name -Name $xmlreport.name
+    }
 }
 function Get-GPO-Without-Prefix{
 	[cmdletbinding()]
@@ -500,12 +502,20 @@ function Get-GPO-Without-Prefix{
 function Get-EmptyGPOs{
 	[cmdletbinding()]
 	param($ConfigDomain)
-	$ConfigDomain.GPOXMLReports | where {(($_.Computer -eq $null) -and ($_.User -eq $null))} | foreach {Get-GPO -Domain $ConfigDomain.Name -Name $_.name}
+	foreach ($xmlreport in ($ConfigDomain.GPOXMLReports | where {(($_.Computer -eq $null) -and ($_.User -eq $null))} )) {
+        Get-GPO -Domain $ConfigDomain.Name -Name $xmlreport.name
+    }
 }
 function Get-DisabledGPOs{
 	[cmdletbinding()]
 	param($ConfigDomain)
-	$ConfigDomain.GPOXMLReports | where {(($_.Computer -eq $null) -and ($_.UserEnabled -eq "false") -and ($_.ComputerEnabled -eq "true")) -or (($_.User -eq $null) -and ($_.ComputerEnabled -eq "false") -and ($_.UserEnabled -eq "true")) -or (($_.ComputerEnabled -eq "false") -and ($_.UserEnabled -eq "false"))} | foreach {Get-GPO -Domain $ConfigDomain.Name -Name $_.name}
+	foreach ($xmlreport in ($ConfigDomain.GPOXMLReports | where {
+        (($_.Computer -eq $null) -and ($_.UserEnabled -eq "false") -and ($_.ComputerEnabled -eq "true")) `
+        -or (($_.User -eq $null) -and ($_.ComputerEnabled -eq "false") -and ($_.UserEnabled -eq "true")) `
+        -or (($_.ComputerEnabled -eq "false") -and ($_.UserEnabled -eq "false"))
+    })) {
+        Get-GPO -Domain $ConfigDomain.Name -Name $xmlreport.name
+    }
 }
 function BogusGPOstotable{
 	param ([array]$unlinked,[array]$disabled,[array]$empty)
@@ -687,7 +697,7 @@ param(
 				$DiffReportPath = $ConfigDomain.GPOReportPath + "\Diff_"+$GPO.Displayname + "_" + $GPO.ModificationTime.Month + "-"+ $GPO.ModificationTime.Day + "-" + $GPO.ModificationTime.Year + "_" + $GPOBackup.Id + ".html" 
 				$previousreport=Get-PreviousReport -ConfigDomain $ConfigDomain -gponame $GPO.Displayname -currentreport $ReportPath
 				Create-GPOReportDiff -gpo1 $(get-content $previousreport) -gpo2 $(get-content $ReportPath) | Out-File $DiffReportPath
-				My-Verbose "$(Get-Date -Format "HH:mm:ss") $($ConfigDomain.Name): `tSaved Report"
+				My-Verbose "$(Get-Date -Format "HH:mm:ss") $($ConfigDomain.Name): `tSaved DiffReport"
 			}
 			if ($config.GPOBackup.SendResult -eq "true") {
 				if ($config.GPOBackup.AttachDiffReports -eq "true") {

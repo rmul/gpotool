@@ -21,7 +21,8 @@ Import-Module SDM-GPMC
 write-verbose "Changing working directory to $(get-scriptdirectory)"
 [System.IO.Directory]::SetCurrentDirectory((get-scriptdirectory))
 Write-Verbose "Importing functions and global variables from .\ADGPOlib.ps1"
-. .\ADGPOlib.ps1
+#. .\ADGPOlib.ps1
+. .\lib\ADGPOlib.ps1
 Write-Verbose "Loading HTMLdiff assembly"
 LoadHTMLDiff
 

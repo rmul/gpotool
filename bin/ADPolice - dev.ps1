@@ -29,12 +29,9 @@ LoadHTMLDiff $path\..\lib\htmldiff.dll
 #region Load Config
 $config=LoadConfig $InputFile
 $config=CreateConfig
-$Domains=$config.Domains.Domain
+$Domains=[array]$config.Domains.Domain
 $cssstyle=Get-CSS $path\..\var\gpotool-basic.css
 #endregion Load Config
-
-$domains 
-break
 
 #region Backup GPOs
 Write-Verbose "$(Get-Date -Format "HH:mm:ss") : Region Backup GPOs"
@@ -44,14 +41,14 @@ foreach ($domain in $Domains) {
 #endregion Backup GPOs
 
 #region Get all GPOReports in XML format
-Write-verbose "$(Get-Date -Format "HH:mm:ss") : Region Get all GPOReports in XML format"
+My-verbose "Region Get all GPOReports in XML format"
 $i=0
+
 while ($i -lt $Domains.Count) {
 	$GPOXMLReports=Get-GPOXMLReports $Domains[$i].Name	
 	$Domains[$i]=$Domains[$i] | Add-Member -MemberType NoteProperty -Name GPOXMLReports -Value $GPOXMLReports -PassThru	
 	$i++
 }
-Remove-Variable GPOXMLReports
 Remove-Variable i
 #endregion Get all GPOReports in XML format
 
@@ -164,7 +161,6 @@ foreach ($domain in $Domains) {
 	foreach ($gpo in $domain.GPOXMLReports) {
 		$neutralGPOs+=$($gpo.Name -replace "^$($domain.GPOPrefix)","?_")
 	}
-	Remove-Variable gpo
 }
 Remove-Variable domain
 $neutralGPOs=$neutralGPOs | sort

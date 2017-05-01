@@ -1,29 +1,21 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <Configuration>
   <Domains>
-	<Domain Name="eett.local" 
+	<Domain Name="kitc.local" 
 		GPOPrefix="T_"
-		ShortName="eett"
+		ShortName="kitc"
 		GPOBackupPath="E:\GPOBackup\EETT\Backups" 
 		GPOReportPath="E:\GPOBackup\EETT\Reports"
 		GPOLinkReportPath="E:\GPOBackup\EETT\GPOLinkReports"
 		OUReportPath="E:\GPOBackup\EETT\OUReports"
-	/>	  
-	<Domain Name="eeta.local" 
-		GPOPrefix="A_"
-		ShortName="eeta"
-		GPOBackupPath="E:\GPOBackup\EETA\Backups" 
-		GPOReportPath="E:\GPOBackup\EETA\Reports"
-		GPOLinkReportPath="E:\GPOBackup\EETA\GPOLinkReports"
-		OUReportPath="E:\GPOBackup\EETA\OUReports"
-	/>	  
-	<Domain Name="eetp.local" 
-		GPOPrefix="P_" 
-		ShortName="eetp"
-		GPOBackupPath="E:\GPOBackup\EETP\Backups" 
-		GPOReportPath="E:\GPOBackup\EETP\Reports"
-		GPOLinkReportPath="E:\GPOBackup\EETP\GPOLinkReports"
-		OUReportPath="E:\GPOBackup\EETP\OUReports"
+	/>
+	<Domain Name="kita.local" 
+		GPOPrefix="T_"
+		ShortName="kita"
+		GPOBackupPath="E:\GPOBackup\EETT\Backups" 
+		GPOReportPath="E:\GPOBackup\EETT\Reports"
+		GPOLinkReportPath="E:\GPOBackup\EETT\GPOLinkReports"
+		OUReportPath="E:\GPOBackup\EETT\OUReports"
 	/>
   </Domains>
   <Reports 

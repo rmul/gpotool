@@ -1,5 +1,5 @@
 [CmdletBinding()] 
-param([string]$InputFile="..\etc\domains.xml",[Switch]$Dev)
+param([string]$InputFile="..\etc\domains.xml",[Switch]$Discover,[Switch]$Dev)
 
 cls
 $path=Split-Path $MyInvocation.MyCommand.Path
@@ -28,7 +28,7 @@ LoadHTMLDiff $path\..\lib\htmldiff.dll
 
 #region Load Config
 $config=LoadConfig $InputFile
-$config=CreateConfig
+if ($Discover) { $config=CreateConfig }
 $Domains=[array]$config.Domains.Domain
 $cssstyle=Get-CSS $path\..\var\gpotool-basic.css
 #endregion Load Config

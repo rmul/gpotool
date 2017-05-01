@@ -120,7 +120,7 @@ while ($i -lt $testhtml.Count) {
 	}
 	$i++
 }
-New-Item -ItemType Directory -Force -Path $config.Domains.Reports.OUDiffPath
+$create_dir = New-Item -ItemType Directory -Force -Path $config.Domains.Reports.OUDiffPath
 $testhtml | Out-File "$($config.Domains.Reports.OUDiffPath)\OUDiff_$runtime.htm"
 if ($dev) {
 	ii "$($config.Domains.Reports.OUDiffPath)\OUDiff_$runtime.htm"
@@ -142,7 +142,7 @@ foreach ($domain in $Domains) {
 }
 $table=BogusGPOstotable $unlinkedGPOs $disabledGPOs $emptyGPOs
 $html=$null| ConvertTo-HTML -head $cssstyle -Title "EET ADPolice Obsolete GPOs Report" -Body $table
-New-Item -ItemType Directory -Force -Path $config.Domains.Reports.ObsoletedGPOsPath
+$create_dir = New-Item -ItemType Directory -Force -Path $config.Domains.Reports.ObsoletedGPOsPath
 $html| Out-File "$($config.Domains.Reports.ObsoletedGPOsPath)\ObsoletedGPOs_$runtime.htm"
 if ($dev) {
 	ii "$($config.Domains.Reports.ObsoletedGPOsPath)\ObsoletedGPOs_$runtime.htm"
@@ -202,7 +202,7 @@ while ($i -lt $testhtml.Count) {
 	}
 	$i++
 }
-New-Item -ItemType Directory -Force -Path $config.Domains.Reports.GPDiffPath
+$create_dir = New-Item -ItemType Directory -Force -Path $config.Domains.Reports.GPDiffPath
 $testhtml | Out-File "$($config.Domains.Reports.GPDiffPath)\GPDiff_$runtime.htm"
 if ($dev) {
 	ii "$($config.Domains.Reports.GPDiffPath)\GPDiff_$runtime.htm"
@@ -272,7 +272,7 @@ $report+=OutputGPOLinkTableHeader
 $report+=(OutputGPOLinkTable $AllNeutralGPOLinks )
 $report+=OutputGPOLinkTableFooter
 $report+=OutputGPOLinkHtmlFooter
-New-Item -ItemType Directory -Force -Path $config.Domains.Reports.GPLinkDiffPath
+$create_dir = New-Item -ItemType Directory -Force -Path $config.Domains.Reports.GPLinkDiffPath
 $report | Out-File "$($config.Domains.Reports.GPLinkDiffPath)\GPLinkDiff_$runtime.htm"
 #$AllNeutralGPOLinks | ConvertTo-Html | Out-File "$($config.Domains.Reports.GPLinkDiffPath)\GPLinkDiff_$runtime.htm"
 if ($dev) {

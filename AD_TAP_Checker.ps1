@@ -1,4 +1,5 @@
-﻿[cmdletbinding()]
+﻿
+[cmdletbinding()]
 param()
 cls
 if($host.Runspace.ApartmentState -ne "STA")

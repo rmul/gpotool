@@ -1,31 +1,29 @@
 [cmdletbinding()]
 param()
 
-Write-Verbose (“{0} : {1} :{2,0}{3}” –f (Get-Date -Format "HH:mm:ss"),$(Get-PSCallStack)[1].Command," ","Loading ADGPOlib.ps1")
-
 #region Functions
-Write-Verbose (“{0} : {1} :{2,0}{3}” –f (Get-Date -Format "HH:mm:ss"),$(Get-PSCallStack)[0].Command," ","Defining Functions")
+Write-Verbose (“{0} : {1,-20} :{2,4}{3}” –f (Get-Date -Format "HH:mm:ss"),$(Get-PSCallStack)[0].Command," ","Defining Functions")
 
-Write-Verbose (“{0} : {1} :{2,4}{3}” –f (Get-Date -Format "HH:mm:ss"),$(Get-PSCallStack)[0].Command," ","My-Verbose - Formatted Verbose Logging")
+#Write-Verbose (“{0} : {1,-20} :{2,8}{3}” –f (Get-Date -Format "HH:mm:ss"),$(Get-PSCallStack)[0].Command," ","My-Verbose - Formatted Verbose Logging")
 Function My-Verbose {
 	[cmdletbinding()]
 	param ([string]$message,[int]$indent=0)
     $callstack=Get-PSCallStack
     $spacing=4 * $($callstack.count - (3 - $indent))
-    Write-Verbose (“{0} : {1} :{2,$spacing}{3}” –f (Get-Date -Format "HH:mm:ss"),$callstack[1].Command," ",$message)
+    Write-Verbose (“{0} : {1,-20} :{2,$spacing}{3}” –f (Get-Date -Format "HH:mm:ss"),$callstack[1].Command," ",$message)
 
 }
 
-My-Verbose "My-Error - Formatted Error Logging"
+#My-Verbose "My-Error - Formatted Error Logging" 1
 Function My-Error {
 	[cmdletbinding()]
 	param ([string]$message,[int]$indent=0)
     $callstack=Get-PSCallStack
     $spacing=4 * $($callstack.count - (3 - $indent))
-    Write-Error (“{0} : {1} :{2,$spacing}{3}” –f (Get-Date -Format "HH:mm:ss"),$callstack[1].Command," ",$message)
+    Write-Error (“{0} : {1,-25} :{2,$spacing}{3}” –f (Get-Date -Format "HH:mm:ss"),$callstack[1].Command," ",$message)
 }
 
-My-Verbose "LoadHTMLDiff - Loads htmldiff.dll from current directory"
+#My-Verbose "LoadHTMLDiff - Loads htmldiff.dll from current directory" 1
 function LoadHTMLDiff {
 	[cmdletbinding()]
 	param($file='.\HtmlDiff.dll')
@@ -39,7 +37,7 @@ function LoadHTMLDiff {
 	}
 }
 
-My-Verbose "LoadConfig - Loads specified xmlfile and returns configuration-section as xml-object"
+#My-Verbose "LoadConfig - Loads specified xmlfile and returns configuration-section as xml-object" 1
 Function LoadConfig {
 	[cmdletbinding()]
 	param ($filename)
@@ -53,7 +51,7 @@ Function LoadConfig {
 	$config.Configuration
 }
 
-My-Verbose "CreateConfig - Scans for Trusted Domains and returns configuration-section for these domains as xml-object"
+#My-Verbose "CreateConfig - Scans for Trusted Domains and returns configuration-section for these domains as xml-object" 1
 Function CreateConfig {
 	[cmdletbinding()]
 	param ($filename)
@@ -148,7 +146,8 @@ Function Send-SMTPmail($to, $from, $subject, $body, $attachment, $cc, $bcc, $por
 
     $mailer.send($msg)
 } 
-function Get-OU-Report {
+
+Function Get-OU-Report {
 	[cmdletbinding()]
 	param($ConfigDomain,$Config)
 	$changes=$false
@@ -217,6 +216,7 @@ function Get-OU-Report {
 	}
 	$gpinheritance
 }
+
 Function Get-PreviousReport($ConfigDomain=$(throw "ConfigDomain required."),$gponame,$currentreport){
 	$gporeports=Get-ChildItem -Path "$($ConfigDomain.GPOReportPath)\*" -Include "$($gponame)_[0-9]*.html"
 	$tempje=$currentreport.split('_')
@@ -242,7 +242,8 @@ Function Get-PreviousReport($ConfigDomain=$(throw "ConfigDomain required."),$gpo
 	}
 	return $previousreport
 }
-function Add-Node { 
+
+Function Add-Node { 
 	[cmdletbinding()]
     param (
 		$selectedNode, 
@@ -257,7 +258,8 @@ function Add-Node {
     $selectedNode.Nodes.Add($newNode) | Out-Null 
     return $newNode 
 } 
-function ou-treenodes {
+
+Function ou-treenodes {
 	[cmdletbinding()]
 	param ($node,$dn,$svr)	
 	My-Verbose "$(Get-Date -Format "HH:mm:ss") : `tOU-Treenodes for $dn"
@@ -267,6 +269,7 @@ function ou-treenodes {
 		ou-treenodes $newnode $_.distinguishedname $svr | Out-Null
 	}
 }
+
 Function Compare-OU-Trees($domains2compare){
 	My-Verbose "$(Get-Date -Format "HH:mm:ss") : Comparing $domains2compare"
 	$domainous=New-Object System.Windows.Forms.TreeNode
@@ -377,7 +380,8 @@ Function Compare-OU-Trees($domains2compare){
 #	}
 #	$testhtml | Out-File "$($config.Domains.Reports.OUDiffPath)\OUDiff_$runtime.htm"
 }
-function OutputOUGPOLinkHtmlHeader {
+
+Function OutputOUGPOLinkHtmlHeader {
 	[cmdletbinding()]
 	param($ConfigDomain)
 	$htmlheader="<html>"
@@ -386,7 +390,8 @@ function OutputOUGPOLinkHtmlHeader {
 	$htmlheader+="<h1>GPO Link Report - $($Configdomain.Name)</h1>"
 	$htmlheader
 }
-function OutputGPOLinkHtmlHeader {
+
+Function OutputGPOLinkHtmlHeader {
 	[cmdletbinding()]
 	param()
 	$htmlheader="<html>"
@@ -397,7 +402,8 @@ function OutputGPOLinkHtmlHeader {
 	$htmlheader+="<h1>GPO Link Differences Report</h1>"
 	$htmlheader
 }
-function OutputGPOLinkHtmlFooter {
+
+Function OutputGPOLinkHtmlFooter {
 	$htmlfooter="</body></html>"
 	$htmlfooter
 }

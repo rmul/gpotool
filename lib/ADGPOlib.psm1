@@ -12,8 +12,9 @@ Function My-Verbose {
 	param ([string]$message,[int]$indent=0)
     $callstack=Get-PSCallStack
     $spacing=4 * $($callstack.count - (3 - $indent))
-    Write-Verbose (“{0} : {1,-20} :{2,$spacing}{3}” –f (Get-Date -Format "HH:mm:ss"),$callstack[1].Command," ",$message)
-
+    if ($global:verb) {
+        Write-Information (“{0} : {1,-20} :{2,$spacing}{3}” –f (Get-Date -Format "HH:mm:ss"),$callstack[1].Command," ",$message) -InformationAction Continue
+    }
 }
 
 #My-Verbose "My-Error - Formatted Error Logging" 1
@@ -29,7 +30,6 @@ Function My-Error {
 Function LoadHTMLDiff {
 	[cmdletbinding()]
 	param($file='.\HtmlDiff.dll')
-
 	try {
         My-Verbose "Loading: $file"
 		$rc=[Reflection.Assembly]::LoadFrom($file)

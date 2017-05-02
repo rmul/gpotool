@@ -19,13 +19,15 @@
 .EXAMPLE
     .\BackupAndReport.ps1 -Discover
     Will discover the local domain and trusted domains (if any), then performs the following steps:
-    - Create backups of GPO's if changed since the last backup.
-    - Create a report for each backed up GPO.
-    - Create a diff report for each backed up GPO, comparing with the previous backup.
-    - Creates an overview of the OU structure and generates a report comparing the OU structure between the domains.
-    - Finds and reports obsolete (empty, disabled and/or unlinked) GPO's.
-    - Generates a report comparing the existance of GPO's in the different domains.
-    - Generates a report comparing the GPO links in the different domains.
+    -Backup
+        - Create backups of GPO's if changed since the last backup.
+        - Create a report for each backed up GPO.
+    -DomainDiff
+        - Create a diff report for each backed up GPO, comparing with the previous backup.
+        - Creates an overview of the OU structure and generates a report comparing the OU structure between the domains.
+        - Finds and reports obsolete (empty, disabled and/or unlinked) GPO's.
+        - Generates a report comparing the existance of GPO's in the different domains.
+        - Generates a report comparing the GPO links in the different domains.
 .NOTES
     Author: Rene Mul
     Date:   May 2, 2017    
@@ -44,7 +46,7 @@ param(
 Clear-Host
 $oldpath=Get-Location
 $path=Split-Path $MyInvocation.MyCommand.Path
-#write-information $path -InformationAction Continue
+$global:verb=$VerbosePreference -eq "Continue"
 Set-Location $path
 
 $runtime=$(Get-Date -Format "yyyyMMddHHmmss")
@@ -53,11 +55,14 @@ $RunInIse = ($host.Name -eq 'PowerGUIScriptEditorHost') -or ($host.Name -match '
 if (!$RunInIse) { Start-Transcript -IncludeInvocationHeader -Path ..\log\adpolice.$($runtime).log}
 
 #region Load Modules
-Write-Verbose (“{0} : {1,-20} :{2,0}{3}” –f (Get-Date -Format "HH:mm:ss"),$(Get-PSCallStack)[0].Command," ","Loading ADGPOlib.ps1")
+if ($global:verb) {
+Write-Information (“{0} : {1,-20} :{2,0}{3}” –f (Get-Date -Format "HH:mm:ss"),$(Get-PSCallStack)[0].Command," ","Importing ADGPOlib module") -InformationAction Continue
+}
 try {
-    . $path\..\lib\ADGPOlib.ps1
+    Import-Module $path\..\lib\ADGPOlib.psm1 -Verbose:$false -WarningAction SilentlyContinue
+    #. $path\..\lib\ADGPOlib.ps1
 } catch {
-    Write-Error "Error Loading required ADGPOlib.ps1"
+    Write-Error "Error Loading required module ADGPOlib from $path\..\lib\ADGPOlib.psm1"
     return 1
 }
 My-Verbose "Importing ActiveDirectory Module" 

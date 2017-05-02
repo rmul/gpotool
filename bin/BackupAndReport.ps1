@@ -355,4 +355,12 @@ if ($All -or $DomainDiff) {
 }
 
 if (!$RunInIse) { Stop-Transcript }
+
+#region cleanup
+Remove-Variable verb -Scope global
+Remove-Module ADGPOlib -Verbose:$false
+Remove-Module activedirectory -Verbose:$false
+Remove-Module grouppolicy -Verbose:$false
+
 Set-Location $oldpath
+#endregion cleanup

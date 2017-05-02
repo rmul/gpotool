@@ -32,7 +32,8 @@ Function LoadHTMLDiff {
 	param($file='.\HtmlDiff.dll')
 	try {
         My-Verbose "Loading: $file"
-		$rc=[Reflection.Assembly]::LoadFrom($file)
+		#$rc=[Reflection.Assembly]::LoadFrom($file)
+        Add-Type -Path $file
 		My-Verbose "Loaded: $rc"
 	} catch {
 		My-Error "$file could not be loaded!"

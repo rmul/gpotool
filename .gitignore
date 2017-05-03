@@ -1,3 +1,4 @@
 var/
 toberemoved/
-!**/emtpy.txt
+!/**/emtpy.txt
+!/var/log/emtpy.txt

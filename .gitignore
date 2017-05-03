@@ -1,3 +1,4 @@
 /toberemoved/**
 *.log
 !empty.txt
+/var/**

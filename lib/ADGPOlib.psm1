@@ -38,6 +38,9 @@ Function LoadHTMLDiff {
 	} catch {
 		My-Error "$file could not be loaded!"
 	}
+
+    My-Verbose "====$($Global:WorkingFolder)======="
+
 }
 
 #My-Verbose "LoadConfig - Loads specified xmlfile and returns configuration-section as xml-object" 1
@@ -57,7 +60,7 @@ Function LoadConfig {
 #My-Verbose "CreateConfig - Scans for Trusted Domains and returns configuration-section for these domains as xml-object" 1
 Function CreateConfig {
 	[cmdletbinding()]
-	param ($filename)
+	param ($workpath=".")
 	$xmldoc=new-object System.Xml.XmlDocument
 	$xmlconfig=$xmldoc.CreateElement("Configuration")
 	$xmldomains=$xmldoc.CreateElement("Domains")
@@ -67,10 +70,10 @@ Function CreateConfig {
 	$xmldomain.SetAttribute("Name",$domain.DNSRoot)
 	$xmldomain.SetAttribute("GPOPrefix",$domain.Name.Substring(3,1)+'_')
 	$xmldomain.SetAttribute("ShortName",$domain.Name.Split('.')[0])
-	$xmldomain.SetAttribute("GPOBackupPath","c:\GPOBackup\$($domain.Name)\Backups" )
-	$xmldomain.SetAttribute("GPOReportPath","C:\GPOBackup\$($domain.Name)\Reports")
-	$xmldomain.SetAttribute("GPOLinkReportPath","C:\GPOBackup\$($domain.Name)\GPOLinkReports")
-	$xmldomain.SetAttribute("OUReportPath","C:\GPOBackup\$($domain.Name)\OUReports")
+	$xmldomain.SetAttribute("GPOBackupPath","$workpath\$($domain.Name)\Backups" )
+	$xmldomain.SetAttribute("GPOReportPath","$workpath\$($domain.Name)\Reports")
+	$xmldomain.SetAttribute("GPOLinkReportPath","$workpath\$($domain.Name)\GPOLinkReports")
+	$xmldomain.SetAttribute("OUReportPath","$workpath\$($domain.Name)\OUReports")
 	$xmldomains.AppendChild($xmldomain)
 	Remove-Variable xmldomain
 
@@ -80,21 +83,21 @@ Function CreateConfig {
 		$xmldomain.SetAttribute("Name",$trusteddomain.Name)
 		$xmldomain.SetAttribute("GPOPrefix",$trusteddomain.Name.Substring(3,1)+'_')
 		$xmldomain.SetAttribute("ShortName",$trusteddomain.Name.Split('.')[0])
-		$xmldomain.SetAttribute("GPOBackupPath","c:\GPOBackup\$($trusteddomain.Name)\Backups" )
-		$xmldomain.SetAttribute("GPOReportPath","C:\GPOBackup\$($trusteddomain.Name)\Reports")
-		$xmldomain.SetAttribute("GPOLinkReportPath","C:\GPOBackup\$($trusteddomain.Name)\GPOLinkReports")
-		$xmldomain.SetAttribute("OUReportPath","C:\GPOBackup\$($trusteddomain.Name)\OUReports")
+		$xmldomain.SetAttribute("GPOBackupPath","$workpath\$($trusteddomain.Name)\Backups" )
+		$xmldomain.SetAttribute("GPOReportPath","$workpath\$($trusteddomain.Name)\Reports")
+		$xmldomain.SetAttribute("GPOLinkReportPath","$workpath\$($trusteddomain.Name)\GPOLinkReports")
+		$xmldomain.SetAttribute("OUReportPath","$workpath\$($trusteddomain.Name)\OUReports")
 		$xmldomains.AppendChild($xmldomain)
 		Remove-Variable xmldomain
 	}
 	$xmlReports=$xmldoc.CreateElement("Reports")
-	$xmlReports.SetAttribute("OUDiffPath","C:\GPOBackup\OUDiff")
-	$xmlReports.SetAttribute("GPDiffPath","C:\GPOBackup\GPDiff")
-	$xmlReports.SetAttribute("ObsoletedGPOsPath","C:\GPOBackup\Obsoleted GPOs")
-	$xmlReports.SetAttribute("GPLinkDiffPath","C:\GPOBackup\GPLinkDiff")
+	$xmlReports.SetAttribute("OUDiffPath","$workpath\OUDiff")
+	$xmlReports.SetAttribute("GPDiffPath","$workpath\GPDiff")
+	$xmlReports.SetAttribute("ObsoletedGPOsPath","$workpath\Obsoleted GPOs")
+	$xmlReports.SetAttribute("GPLinkDiffPath","$workpath\GPLinkDiff")
 	$xmldomains.AppendChild($xmlReports)
 	$xmlconfig.AppendChild($xmldomains)
-	
+<#	
 	$xmlmail=$xmldoc.CreateElement("Mail")
 	$xmlmail.SetAttribute("SmtpHost","mail")
 	$xmlmail.SetAttribute("recipient","rmul@schubergphilis.com")
@@ -128,7 +131,7 @@ Function CreateConfig {
 	$xmlGPOLinkReport.SetAttribute("AttachDiffReports","true")
 	$xmlGPOLinkReport.SetAttribute("SendResult","true")
 	$xmlconfig.AppendChild($xmlGPOLinkReport)  
-
+#>
 	$xmlconfig
 }
 
@@ -161,7 +164,7 @@ Function Get-OU-Report {
 	}
 	$myruntime=$(Get-Date -Format "yyyyMMddHHmmss")
 	
-	New-Item -ItemType Directory -Force -Path $ConfigDomain.GPOLinkReportPath
+	$null=New-Item -ItemType Directory -Force -Path $ConfigDomain.GPOLinkReportPath
 	$dc=$(Get-ADDomainController -DomainName $ConfigDomain.Name -Discover).Name+"."+$ConfigDomain.Name
 	My-Verbose "$(Get-Date -Format "HH:mm:ss") $($ConfigDomain.Name): Found DC $dc"
 	$DomainDN="DC="+$ConfigDomain.Name.split('.')[0]+",DC="+$ConfigDomain.Name.split('.')[1]
@@ -174,7 +177,7 @@ Function Get-OU-Report {
 	My-Verbose "$(Get-Date -Format "HH:mm:ss") $($ConfigDomain.Name): Searching most recent GPOLinkreport in $($ConfigDomain.GPOLinkReportPath)"
 	[array]$oldreports=get-childitem "$($ConfigDomain.GPOLinkReportPath)\*" -Include "GpoLinkReport_*.html" | sort CreationTime
 	if ($oldreports.count -eq 0) {
-		[array]$oldreports=get-childitem "..\etc\*" -Include "Empty.html"
+		[array]$oldreports=get-childitem "$($global:rootpath)\etc\*" -Include "Empty.html"
 	}
 	My-Verbose "$(Get-Date -Format "HH:mm:ss") $($ConfigDomain.Name): Getting content from $($oldreports[-1])"
 	$oldreport=Get-Content $oldreports[-1]
@@ -480,7 +483,7 @@ Function OutputGPOLinkTable ($gpolinksarray) {
 	$tablerow
 }
 
-Function Get-CSS([string]$StyleSheet="..\etc\ADPolice.css") {
+Function Get-CSS([string]$StyleSheet="$($global:rootpath)\etc\ADPolice.css") {
 	<#  
 	.SYNOPSIS  
     	Returns css style string loaded from inputfile  
@@ -679,9 +682,9 @@ param(
 	}
 	[String]$result="GPO Change Reports`r`n==============`r`n"
 	My-Verbose "$(Get-Date -Format "HH:mm:ss") $($ConfigDomain.Name): Creating Report Path $($ConfigDomain.GPOReportPath) if not exist"	
-	if (!(Test-Path -path $ConfigDomain.GPOReportPath)) {New-Item $ConfigDomain.GPOReportPath -type directory}
+	if (!(Test-Path -path $ConfigDomain.GPOReportPath)) {$null=New-Item $ConfigDomain.GPOReportPath -type directory}
 	My-Verbose "$(Get-Date -Format "HH:mm:ss") $($ConfigDomain.Name): Creating Backup Path $($ConfigDomain.GPOBackupPath) if not exist"
-	if (!(Test-Path -path $ConfigDomain.GPOBackupPath)) {New-Item $ConfigDomain.GPOBackupPath -type directory}
+	if (!(Test-Path -path $ConfigDomain.GPOBackupPath)) {$null=New-Item $ConfigDomain.GPOBackupPath -type directory}
 	My-Verbose "$(Get-Date -Format "HH:mm:ss") $($ConfigDomain.Name): Getting all GPOs"
 	$AllGPOs=Get-GPO -All -Domain $ConfigDomain.Name
 	My-Verbose "$(Get-Date -Format "HH:mm:ss") $($ConfigDomain.Name): Getting old Backups from $($ConfigDomain.GPOBackupPath)"

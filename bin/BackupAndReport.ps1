@@ -4,10 +4,15 @@
 .DESCRIPTION
     .
 .PARAMETER InputFile
-    The path to XML-based configurationfile, optional
+    The path to XML-based configurationfile, This will default to domains.xml in the etc subfolder.
+.PARAMETER WorkingFolder
+    The path where to store backups and reports. This will default to the ./var subfolder. Specific folders will be overridden
+    if specified in the inputfile unless the Discover switch is used.
+.PARAMETER LogFolder
+    The path where to store logs. This will default to the $WorkingFolder/log subfolder.
 .PARAMETER Discover
     Specifies that the script doesn't use a configurationfile but will discover the local domain
-    and possible trusted domains.
+    and possible trusted domains. Will override the InputFile setting
 .PARAMETER All
     Specifies that the script performs all actions, this is the default.
 .PARAMETER Backup
@@ -35,7 +40,9 @@
 
 [CmdletBinding()] 
 param(
-    [string]$InputFile="..\etc\domains.xml",
+    [string]$InputFile,
+    [string]$WorkingFolder,
+    [string]$LogFolder,
     [Switch]$Discover,
     [Switch]$Dev,
     [Switch]$All,
@@ -44,25 +51,35 @@ param(
 )
 
 Clear-Host
+
+#region Global vars
 $oldpath=Get-Location
-$path=Split-Path $MyInvocation.MyCommand.Path
+$binpath=Split-Path $MyInvocation.MyCommand.Path
+$global:rootpath=Split-Path $binpath
+$scriptname=(Get-Item $MyInvocation.InvocationName).BaseName
 $global:verb=$VerbosePreference -eq "Continue"
-Set-Location $path
-
 $runtime=$(Get-Date -Format "yyyyMMddHHmmss")
-
 $RunInIse = ($host.Name -eq 'PowerGUIScriptEditorHost') -or ($host.Name -match 'ISE')
-if (!$RunInIse) { Start-Transcript -IncludeInvocationHeader -Path ..\log\adpolice.$($runtime).log}
+#endregion Global vars
+
+#region Parse parameters
+If (!$All -and !$Backup -and !$DomainDiff) { $All=$true }
+if (!$InputFile) { $InputFile="$rootpath\etc\domains.xml" }
+if (!$WorkingFolder) { $WorkingFolder="$rootpath\var" }
+$global:WorkingFolder=$WorkingFolder
+if (!$LogFolder) { $LogFolder="$WorkingFolder\log" }
+#endregion Parse parameters
+
+if (!$RunInIse) { Start-Transcript -IncludeInvocationHeader -Path $LogFolder\$scriptname.$($runtime).log}
 
 #region Load Modules
 if ($global:verb) {
 Write-Information (“{0} : {1,-20} :{2,0}{3}” –f (Get-Date -Format "HH:mm:ss"),$(Get-PSCallStack)[0].Command," ","Importing ADGPOlib module") -InformationAction Continue
 }
 try {
-    Import-Module $path\..\lib\ADGPOlib.psm1 -Verbose:$false -WarningAction SilentlyContinue
-    #. $path\..\lib\ADGPOlib.ps1
+    Import-Module $rootpath\lib\ADGPOlib.psm1 -Verbose:$false -WarningAction SilentlyContinue
 } catch {
-    Write-Error "Error Loading required module ADGPOlib from $path\..\lib\ADGPOlib.psm1"
+    Write-Error "Error Loading required module ADGPOlib from $rootpath\lib\ADGPOlib.psm1"
     return 1
 }
 My-Verbose "Importing ActiveDirectory Module" 
@@ -70,32 +87,26 @@ Import-Module activedirectory -Verbose:$false
 My-Verbose "Importing GroupPolicy Module"
 Import-Module grouppolicy -Verbose:$false
 My-Verbose "Loading HTMLDiff"
-LoadHTMLDiff $path\..\lib\htmldiff.dll
+LoadHTMLDiff $rootpath\lib\htmldiff.dll
+$cssstyle=Get-CSS $rootpath\etc\gpotool-basic.css
 #endregion Load Modules
 
-#region Parse parameters
-If (!$All -and ! $Backup -and !$DomainDiff) { $All=$true }
 If ($All) { My-Verbose "Performing all actions" }
 else {
     if ($Backup) { My-Verbose "Performing GPO Backups" }
     if ($DomainDiff) { My-Verbose "Performing Domain Diff reports" }
 }
-#endregion Parse parameters
 
 #region Load Config
 if ($Discover) {
     My-Verbose "Using AutoDiscover Domain(s)"
-    $config=CreateConfig
+    $config=CreateConfig -workpath $WorkingFolder
 } else {
     My-Verbose "Using configfile $Inputfile"
     $config=LoadConfig $InputFile
 }
-#endregion Load Config
-
-#region Global vars
 $Domains=[array]$config.Domains.Domain
-$cssstyle=Get-CSS $path\..\etc\gpotool-basic.css
-#endregion Global vars
+#endregion Load Config
 
 if ($All -or $Backup) {
     #region Backup GPOs

@@ -70,10 +70,9 @@ Function CreateConfig {
 	$xmldomain.SetAttribute("Name",$domain.DNSRoot)
 	$xmldomain.SetAttribute("GPOPrefix",$domain.Name.Substring(3,1)+'_')
 	$xmldomain.SetAttribute("ShortName",$domain.Name.Split('.')[0])
-	$xmldomain.SetAttribute("GPOBackupPath","$workpath\$($domain.Name)\Backups" )
-	$xmldomain.SetAttribute("GPOReportPath","$workpath\$($domain.Name)\Reports")
+	$xmldomain.SetAttribute("GPOBackupPath","$workpath\$($domain.Name)\GPOBackups" )
+	$xmldomain.SetAttribute("GPOReportPath","$workpath\$($domain.Name)\GPOReports")
 	$xmldomain.SetAttribute("GPOLinkReportPath","$workpath\$($domain.Name)\GPOLinkReports")
-	$xmldomain.SetAttribute("OUReportPath","$workpath\$($domain.Name)\OUReports")
 	$xmldomains.AppendChild($xmldomain)
 	Remove-Variable xmldomain
 
@@ -83,10 +82,9 @@ Function CreateConfig {
 		$xmldomain.SetAttribute("Name",$trusteddomain.Name)
 		$xmldomain.SetAttribute("GPOPrefix",$trusteddomain.Name.Substring(3,1)+'_')
 		$xmldomain.SetAttribute("ShortName",$trusteddomain.Name.Split('.')[0])
-		$xmldomain.SetAttribute("GPOBackupPath","$workpath\$($trusteddomain.Name)\Backups" )
-		$xmldomain.SetAttribute("GPOReportPath","$workpath\$($trusteddomain.Name)\Reports")
+		$xmldomain.SetAttribute("GPOBackupPath","$workpath\$($trusteddomain.Name)\GPOBackups" )
+		$xmldomain.SetAttribute("GPOReportPath","$workpath\$($trusteddomain.Name)\GPOReports")
 		$xmldomain.SetAttribute("GPOLinkReportPath","$workpath\$($trusteddomain.Name)\GPOLinkReports")
-		$xmldomain.SetAttribute("OUReportPath","$workpath\$($trusteddomain.Name)\OUReports")
 		$xmldomains.AppendChild($xmldomain)
 		Remove-Variable xmldomain
 	}
@@ -196,7 +194,7 @@ Function Get-OU-Report {
 			My-Verbose "$(Get-Date -Format "HH:mm:ss") $($ConfigDomain.name): Creating Diff report $($ConfigDomain.GPOLinkReportPath)\GpoLinkReportDiff_$myruntime.html"
 			[Helpers.HtmlDiff] $diff=new-object helpers.HtmlDiff($oldreport, $report)
 			$html=$diff.Build()
-			$style="<style type=""text/css"">"+$(Get-Content "..\etc\GpoLinkReport.css")+"</style>"
+			$style="<style type=""text/css"">"+$(Get-Content "$global:rootpath\etc\GpoLinkReport.css")+"</style>"
 			$html=$html.Replace("<link rel=""stylesheet"" type=""text/css"" href=""GpoLinkReport.css"" />",$style)
 			$html=$html.Replace("</h1>","</h1><h2>Generated on $now</h2>")
 			$html | Out-File "$($ConfigDomain.GPOLinkReportPath)\GpoLinkReportDiff_$myruntime.html"
@@ -227,7 +225,7 @@ Function Get-PreviousReport($ConfigDomain=$(throw "ConfigDomain required."),$gpo
 	$gporeports=Get-ChildItem -Path "$($ConfigDomain.GPOReportPath)\*" -Include "$($gponame)_[0-9]*.html"
 	$tempje=$currentreport.split('_')
 	$currentreportdate=[DateTime]::ParseExact($tempje[$tempje.Count-2],"M-d-yyyy",[System.Globalization.CultureInfo]::InvariantCulture)
-	$previousreport="..\etc\Empty.html"
+	$previousreport="$global:rootpath\etc\Empty.html"
 	$datediff=New-TimeSpan
 	if ($gporeports) {
 		foreach ($report in $gporeports) {

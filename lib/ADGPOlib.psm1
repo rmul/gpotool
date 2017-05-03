@@ -174,7 +174,7 @@ Function Get-OU-Report {
 	My-Verbose "$(Get-Date -Format "HH:mm:ss") $($ConfigDomain.Name): Searching most recent GPOLinkreport in $($ConfigDomain.GPOLinkReportPath)"
 	[array]$oldreports=get-childitem "$($ConfigDomain.GPOLinkReportPath)\*" -Include "GpoLinkReport_*.html" | sort CreationTime
 	if ($oldreports.count -eq 0) {
-		[array]$oldreports=get-childitem "..\var\*" -Include "Empty.html"
+		[array]$oldreports=get-childitem "..\etc\*" -Include "Empty.html"
 	}
 	My-Verbose "$(Get-Date -Format "HH:mm:ss") $($ConfigDomain.Name): Getting content from $($oldreports[-1])"
 	$oldreport=Get-Content $oldreports[-1]
@@ -193,7 +193,7 @@ Function Get-OU-Report {
 			My-Verbose "$(Get-Date -Format "HH:mm:ss") $($ConfigDomain.name): Creating Diff report $($ConfigDomain.GPOLinkReportPath)\GpoLinkReportDiff_$myruntime.html"
 			[Helpers.HtmlDiff] $diff=new-object helpers.HtmlDiff($oldreport, $report)
 			$html=$diff.Build()
-			$style="<style type=""text/css"">"+$(Get-Content "..\var\GpoLinkReport.css")+"</style>"
+			$style="<style type=""text/css"">"+$(Get-Content "..\etc\GpoLinkReport.css")+"</style>"
 			$html=$html.Replace("<link rel=""stylesheet"" type=""text/css"" href=""GpoLinkReport.css"" />",$style)
 			$html=$html.Replace("</h1>","</h1><h2>Generated on $now</h2>")
 			$html | Out-File "$($ConfigDomain.GPOLinkReportPath)\GpoLinkReportDiff_$myruntime.html"
@@ -224,7 +224,7 @@ Function Get-PreviousReport($ConfigDomain=$(throw "ConfigDomain required."),$gpo
 	$gporeports=Get-ChildItem -Path "$($ConfigDomain.GPOReportPath)\*" -Include "$($gponame)_[0-9]*.html"
 	$tempje=$currentreport.split('_')
 	$currentreportdate=[DateTime]::ParseExact($tempje[$tempje.Count-2],"M-d-yyyy",[System.Globalization.CultureInfo]::InvariantCulture)
-	$previousreport="..\var\Empty.html"
+	$previousreport="..\etc\Empty.html"
 	$datediff=New-TimeSpan
 	if ($gporeports) {
 		foreach ($report in $gporeports) {
@@ -480,7 +480,7 @@ Function OutputGPOLinkTable ($gpolinksarray) {
 	$tablerow
 }
 
-Function Get-CSS([string]$StyleSheet="..\var\ADPolice.css") {
+Function Get-CSS([string]$StyleSheet="..\etc\ADPolice.css") {
 	<#  
 	.SYNOPSIS  
     	Returns css style string loaded from inputfile  

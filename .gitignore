@@ -1,1 +1,3 @@
-*.log
+var/
+toberemoved/
+!**/emtpy.txt

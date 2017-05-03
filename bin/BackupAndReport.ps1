@@ -94,7 +94,7 @@ if ($Discover) {
 
 #region Global vars
 $Domains=[array]$config.Domains.Domain
-$cssstyle=Get-CSS $path\..\var\gpotool-basic.css
+$cssstyle=Get-CSS $path\..\etc\gpotool-basic.css
 #endregion Global vars
 
 if ($All -or $Backup) {
@@ -354,8 +354,6 @@ if ($All -or $DomainDiff) {
     #endregion GPOLinks across Domains
 }
 
-if (!$RunInIse) { Stop-Transcript }
-
 #region cleanup
 Remove-Variable verb -Scope global
 Remove-Module ADGPOlib -Verbose:$false
@@ -364,3 +362,5 @@ Remove-Module grouppolicy -Verbose:$false
 
 Set-Location $oldpath
 #endregion cleanup
+
+if (!$RunInIse) { Stop-Transcript }

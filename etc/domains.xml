@@ -8,6 +8,13 @@
 		GPOReportPath="C:\GPOBackup\kitc.local\GPOReports"
 		GPOLinkReportPath="C:\GPOBackup\kitc.local\GPOLinkReports"
 	/>
+	<Domain Name="dummy.local" 
+		GPOPrefix="D_"
+		ShortName="dummy"
+		GPOBackupPath="c:\GPOBackup\dummy.local\GPOBackups" 
+		GPOReportPath="C:\GPOBackup\dummy.local\GPOReports"
+		GPOLinkReportPath="C:\GPOBackup\dummy.local\GPOLinkReports"
+	/>
 	<Reports 
 		OUDiffPath="C:\GPOBackup\OUDiff"
 		GPDiffPath="C:\GPOBackup\GPDiff"

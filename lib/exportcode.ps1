@@ -184,7 +184,7 @@ $System_Drawing_Size.Height = 702
 $System_Drawing_Size.Width = 1140
 $form1.ClientSize = $System_Drawing_Size
 $form1.DataBindings.DefaultDataSourceUpdateMode = 0
-$form1.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon('AD_TAP_Checker.ico')
+$form1.Icon = [System.Drawing.Icon]::ExtractAssociatedIcon("$global:rootpath\Images\AD_TAP_Checker.ico")
 $form1.Name = "form1"
 $form1.Text = "AD Tap Checker"
 
@@ -415,7 +415,7 @@ $ConfigFileLabel.Location = $System_Drawing_Point
 $ConfigFileLabel.Name = "ConfigFileLabel"
 $System_Drawing_Size = New-Object System.Drawing.Size
 $System_Drawing_Size.Height = 23
-$System_Drawing_Size.Width = 112
+$System_Drawing_Size.Width = 800
 $ConfigFileLabel.Size = $System_Drawing_Size
 $ConfigFileLabel.TabIndex = 1
 $ConfigFileLabel.Text = "Current Configuration:"

@@ -38,9 +38,6 @@ Function LoadHTMLDiff {
 	} catch {
 		My-Error "$file could not be loaded!"
 	}
-
-    My-Verbose "====$($Global:WorkingFolder)======="
-
 }
 
 #My-Verbose "LoadConfig - Loads specified xmlfile and returns configuration-section as xml-object" 1

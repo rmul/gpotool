@@ -9,15 +9,15 @@ $System_Drawing_Size = New-Object System.Drawing.Size
 $System_Drawing_Size.Width = 48 
 $System_Drawing_Size.Height = 16 
 $OUtreeView1.ImageList.ImageSize = $System_Drawing_Size
-$OUtreeView1.Imagelist.Images.Add("Main",[System.Drawing.Image]::FromFile(".\Images\eye.gif"))
-$OUtreeView1.Imagelist.Images.Add("Blank",[System.Drawing.Image]::FromFile(".\Images\blank.gif"))
-$OUtreeView1.Imagelist.Images.Add("TAP",[System.Drawing.Image]::FromFile(".\Images\TAP.gif"))
-$OUtreeView1.Imagelist.Images.Add("xAP",[System.Drawing.Image]::FromFile(".\Images\xAP.gif"))
-$OUtreeView1.Imagelist.Images.Add("TxP",[System.Drawing.Image]::FromFile(".\Images\TxP.gif"))
-$OUtreeView1.Imagelist.Images.Add("TAx",[System.Drawing.Image]::FromFile(".\Images\TAx.gif"))
-$OUtreeView1.Imagelist.Images.Add("xxP",[System.Drawing.Image]::FromFile(".\Images\xxP.gif"))
-$OUtreeView1.Imagelist.Images.Add("xAx",[System.Drawing.Image]::FromFile(".\Images\xAx.gif"))
-$OUtreeView1.Imagelist.Images.Add("Txx",[System.Drawing.Image]::FromFile(".\Images\Txx.gif"))
+$OUtreeView1.Imagelist.Images.Add("Main",[System.Drawing.Image]::FromFile("$global:rootpath\Images\eye.gif"))
+$OUtreeView1.Imagelist.Images.Add("Blank",[System.Drawing.Image]::FromFile("$global:rootpath\Images\blank.gif"))
+$OUtreeView1.Imagelist.Images.Add("TAP",[System.Drawing.Image]::FromFile("$global:rootpath\Images\TAP.gif"))
+$OUtreeView1.Imagelist.Images.Add("xAP",[System.Drawing.Image]::FromFile("$global:rootpath\Images\xAP.gif"))
+$OUtreeView1.Imagelist.Images.Add("TxP",[System.Drawing.Image]::FromFile("$global:rootpath\Images\TxP.gif"))
+$OUtreeView1.Imagelist.Images.Add("TAx",[System.Drawing.Image]::FromFile("$global:rootpath\Images\TAx.gif"))
+$OUtreeView1.Imagelist.Images.Add("xxP",[System.Drawing.Image]::FromFile("$global:rootpath\Images\xxP.gif"))
+$OUtreeView1.Imagelist.Images.Add("xAx",[System.Drawing.Image]::FromFile("$global:rootpath\Images\xAx.gif"))
+$OUtreeView1.Imagelist.Images.Add("Txx",[System.Drawing.Image]::FromFile("$global:rootpath\Images\Txx.gif"))
 
 
 #Extra Functions
@@ -124,7 +124,6 @@ $handler_saveFileDialog1_FileOk=
 
 $handler_ConfigLoadbutton_Click= 
 {
-#TODO: Place custom script here
 	$openFileDialog1.ShowDialog()
 }
 
@@ -142,9 +141,9 @@ $handler_CompareButton_Click=
 
 $handler_ConfigFile_OK= 
 {
-#TODO: Place custom script here
 	$configfile=$openFileDialog1.FileName
 	$global:configuration=LoadConfig $configfile
+    $ConfigFileLabel.Text = "Current Configuration: $configfile"
 	#$ConfigLoadbutton.Text=$configfile
 	$neutralgpos=@()
 	$GPOlistBox.Items.Clear()
@@ -158,7 +157,7 @@ $handler_ConfigFile_OK=
 		$neutralgpos+=Get-GPO-Without-Prefix $domain
 	}
 	$SourceListBox.setSelected(0,$true)
-	$DestListBox.setSelected(1,$true)
+	$DestListBox.ClearSelected()
 	$neutralGPOs=$neutralGPOs | sort
 	$neutralGPOs=$neutralGPOs | sort -Unique
 	$GPOlistBox.Items.AddRange($neutralgpos)
